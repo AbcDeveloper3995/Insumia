@@ -6,6 +6,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Inventario } from './pages/Inventario';
 import { Recetas } from './pages/Recetas';
 import { PuntoVenta } from './pages/PuntoVenta';
+import { Informes } from './pages/Informes';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/inventario" element={<Inventario />} />
           <Route path="/recetas" element={<Recetas />} />
           <Route path="/ventas" element={<PuntoVenta />} />
+          <Route path="/informes" element={<Informes />} />
         </Route>
 
         {/* Ruta por defecto o 404 */}

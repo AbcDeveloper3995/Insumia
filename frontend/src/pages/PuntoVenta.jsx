@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Receipt, Info, PlusCircle, CreditCard, ChevronRight } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Receipt, Info, PlusCircle, CreditCard, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { recetasService } from '../services/api/recetas';
 import { ventasService } from '../services/api/ventas';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const PuntoVenta = () => {
   const { session } = useAuth();
@@ -174,166 +175,223 @@ export const PuntoVenta = () => {
   // ==========================================
   // VISTA PRINCIPAL (POS INTERFACE)
   // ==========================================
+  
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, scale: 0.9 },
+    show: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 400, damping: 25 } }
+  };
+
   return (
-    <div className="flex h-full w-full bg-slate-50 overflow-hidden rounded-2xl border border-slate-200/60 shadow-sm">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex h-full w-full bg-slate-50/50 overflow-hidden rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+    >
       
       {/* Panel Izquierdo: Catálogo del Menú */}
-      <div className="flex-1 flex flex-col h-full bg-slate-50/50">
+      <div className="flex-1 flex flex-col h-full bg-transparent">
         
         {/* Header Claro Premium */}
-        <div className="px-8 py-6 bg-white border-b border-slate-100 shrink-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="px-8 py-8 bg-white/60 backdrop-blur-md border-b border-slate-100 shrink-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Punto de Venta</h1>
-            <p className="text-slate-500 text-sm mt-1">Terminal rápida de órdenes</p>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Punto de Venta</h1>
+            <p className="text-slate-500 font-medium text-sm mt-1">Terminal rápida de órdenes táctil</p>
           </div>
-          <div className="relative w-full sm:w-80">
+          <div className="relative w-full sm:w-96 group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-slate-400" />
+              <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
             </div>
             <input
               type="text"
               placeholder="Buscar platillo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm font-medium text-slate-700"
+              className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200/60 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium text-slate-700 shadow-[0_2px_10px_rgba(0,0,0,0.02)]"
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-8 lg:p-10">
           {loading ? (
             <div className="h-full flex items-center justify-center text-slate-400">
-              <div className="animate-pulse flex items-center">
-                <div className="h-2 w-2 bg-slate-400 rounded-full mr-2"></div>
-                Sincronizando menú...
+              <div className="animate-pulse flex items-center font-medium">
+                <div className="h-3 w-3 bg-blue-500 rounded-full mr-3"></div>
+                Sincronizando menú táctil...
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12">
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12"
+            >
               {platillosFiltrados.map(platillo => (
-                <button
+                <motion.button
+                  variants={itemVariants}
+                  whileTap={{ scale: 0.95 }}
                   key={platillo.id}
                   onClick={() => agregarAlCarrito(platillo)}
-                  className="group bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)] hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-200 text-left flex flex-col justify-between aspect-square cursor-pointer"
+                  className="group bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgb(59,130,246,0.1)] hover:border-blue-200 transition-all duration-300 text-left flex flex-col justify-between aspect-[4/5] cursor-pointer overflow-hidden relative"
                 >
-                  <h3 className="font-bold text-slate-700 text-lg leading-tight line-clamp-3 group-hover:text-blue-600 transition-colors">
-                    {platillo.nombre}
-                  </h3>
-                  
-                  <div className="mt-auto flex items-end justify-between w-full">
-                    <div>
-                      <span className="text-2xl font-black text-slate-900 tracking-tight">
+                  {/* Placeholder de Imagen */}
+                  <div className="w-full h-3/5 bg-slate-100/80 rounded-2xl mb-4 flex items-center justify-center overflow-hidden relative">
+                     <ImageIcon size={32} className="text-slate-300 opacity-50" />
+                     {/* Capa de overlay en hover */}
+                     <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/10 transition-colors duration-300 flex items-center justify-center">
+                        <Plus className="text-blue-600 opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300" size={32} strokeWidth={3} />
+                     </div>
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-between px-2 pb-2">
+                    <h3 className="font-bold text-slate-800 text-lg leading-tight line-clamp-2 tracking-tight group-hover:text-blue-600 transition-colors">
+                      {platillo.nombre}
+                    </h3>
+                    
+                    <div className="mt-auto pt-2 flex items-end justify-between w-full">
+                      <span className="text-2xl font-black text-slate-900 tracking-tighter">
                         ${Number(platillo.precio_venta).toFixed(2)}
                       </span>
-                    </div>
-                    <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors duration-200">
-                      <Plus size={20} />
+                      <div className="h-10 w-10 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300 shadow-sm">
+                        <Plus size={20} strokeWidth={2.5} />
+                      </div>
                     </div>
                   </div>
-                </button>
+                </motion.button>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
 
       {/* Panel Derecho: Carrito Claro Premium */}
-      <div className="w-full md:w-[380px] bg-white flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-20 shrink-0 h-full border-l border-slate-100">
+      <div className="w-full md:w-[420px] bg-white/90 backdrop-blur-2xl flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.04)] z-20 shrink-0 h-full border-l border-slate-200/50">
         
         {/* Cabecera Cuenta */}
-        <div className="px-6 py-6 shrink-0 border-b border-slate-100 bg-white">
+        <div className="px-8 py-8 shrink-0 border-b border-slate-100 bg-transparent">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center">
-              <ShoppingCart className="mr-2 text-blue-600" size={20} />
-              Orden Actual
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center">
+              <ShoppingCart className="mr-3 text-blue-600" size={24} strokeWidth={2.5} />
+              Ticket
             </h2>
-            <div className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
+            <div className="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
               {cantArticulos} {cantArticulos === 1 ? 'art' : 'arts'}
             </div>
           </div>
         </div>
 
         {/* Lista de Artículos */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 bg-slate-50/30">
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 bg-transparent">
           {carrito.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3">
-              <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
-                <Receipt size={28} className="text-slate-300" />
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 opacity-50">
+              <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center">
+                <Receipt size={32} className="text-slate-300" strokeWidth={1.5} />
               </div>
-              <p className="font-medium text-sm">Escanea o selecciona platillos.</p>
+              <p className="font-semibold text-sm tracking-wide">Toca un platillo para agregarlo.</p>
             </div>
           ) : (
-            carrito.map(item => (
-              <div key={item.receta.id} className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm hover:border-slate-200 transition-colors">
-                <div className="flex justify-between items-start mb-3">
-                  <span className="font-bold text-slate-700 text-sm leading-tight pr-4">{item.receta.nombre}</span>
-                  <span className="font-bold text-slate-900">${item.total.toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center mt-3">
-                  <div className="flex items-center space-x-1 bg-slate-50 rounded-lg p-1 border border-slate-100">
+            <AnimatePresence>
+              {carrito.map(item => (
+                <motion.div 
+                  initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -20, scale: 0.9 }}
+                  transition={{ duration: 0.2 }}
+                  key={item.receta.id} 
+                  className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:border-blue-100 transition-colors group/item"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="font-bold text-slate-800 text-[15px] leading-tight pr-4 tracking-tight">{item.receta.nombre}</span>
+                    <span className="font-black text-slate-900 text-lg tracking-tight">${item.total.toFixed(2)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-1 bg-slate-50 rounded-xl p-1 border border-slate-200/60">
+                      <button 
+                        onClick={() => modificarCantidad(item.receta.id, -1)}
+                        className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-lg shadow-sm transition-all cursor-pointer active:scale-90"
+                      >
+                        <Minus size={16} strokeWidth={2.5} />
+                      </button>
+                      <span className="font-bold w-10 text-center text-base text-slate-800">{item.cantidad}</span>
+                      <button 
+                        onClick={() => modificarCantidad(item.receta.id, 1)}
+                        className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-lg shadow-sm transition-all cursor-pointer active:scale-90"
+                      >
+                        <Plus size={16} strokeWidth={2.5} />
+                      </button>
+                    </div>
                     <button 
-                      onClick={() => modificarCantidad(item.receta.id, -1)}
-                      className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white rounded-md shadow-sm transition-all cursor-pointer"
+                      onClick={() => eliminarDelCarrito(item.receta.id)}
+                      className="p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all cursor-pointer opacity-0 group-hover/item:opacity-100"
                     >
-                      <Minus size={14} />
-                    </button>
-                    <span className="font-bold w-8 text-center text-sm text-slate-700">{item.cantidad}</span>
-                    <button 
-                      onClick={() => modificarCantidad(item.receta.id, 1)}
-                      className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white rounded-md shadow-sm transition-all cursor-pointer"
-                    >
-                      <Plus size={14} />
+                      <Trash2 size={18} />
                     </button>
                   </div>
-                  <button 
-                    onClick={() => eliminarDelCarrito(item.receta.id)}
-                    className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))
+                </motion.div>
+              ))}
+            </AnimatePresence>
           )}
         </div>
 
         {/* Checkout Footer */}
-        <div className="p-6 bg-white border-t border-slate-100 shrink-0 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.02)]">
+        <div className="p-8 bg-white border-t border-slate-100 shrink-0 shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.05)] rounded-tl-[2rem]">
           
-          <div className="flex justify-between items-end mb-5">
-            <span className="text-slate-500 font-semibold text-sm">Total a Pagar</span>
-            <span className="text-4xl font-black text-slate-900 tracking-tight">
+          <div className="flex justify-between items-end mb-6">
+            <span className="text-slate-400 font-bold text-sm tracking-widest uppercase">Total a Pagar</span>
+            <span className="text-5xl font-black text-slate-900 tracking-tighter">
               ${totalCuenta.toFixed(2)}
             </span>
           </div>
 
-          {ventaExitosa && (
-            <div className="mb-4 bg-emerald-50 text-emerald-700 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center border border-emerald-100">
-              ¡Cobro Exitoso!
-            </div>
-          )}
+          <AnimatePresence>
+            {ventaExitosa && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="mb-5 bg-emerald-50 text-emerald-600 px-4 py-3.5 rounded-2xl text-sm font-bold flex items-center justify-center border border-emerald-100 shadow-sm"
+              >
+                ¡Cobro Exitoso y Descontado!
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <button
             onClick={handleCobrar}
             disabled={carrito.length === 0 || isProcessing}
-            className={`w-full py-4 rounded-xl flex items-center justify-center text-lg font-bold transition-all duration-200 ${
+            className={`w-full py-5 rounded-2xl flex items-center justify-center text-lg font-black transition-all duration-300 relative overflow-hidden group/btn ${
               carrito.length === 0
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 cursor-pointer'
+                : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-[0_10px_30px_rgb(16,185,129,0.3)] hover:shadow-[0_15px_40px_rgb(16,185,129,0.4)] hover:-translate-y-1 cursor-pointer active:scale-95'
             }`}
           >
             {isProcessing ? (
-              <span className="animate-pulse">Procesando...</span>
+              <span className="animate-pulse flex items-center">
+                 Procesando Cobro...
+              </span>
             ) : (
               <>
-                <span className="mr-2">Cobrar Orden</span>
-                <ChevronRight size={20} />
+                <span className="mr-3 text-xl tracking-tight z-10">Cobrar Orden</span>
+                <ChevronRight size={24} className="z-10 opacity-70 group-hover/btn:translate-x-1 group-hover/btn:opacity-100 transition-all" strokeWidth={3} />
+                
+                {/* Overlay luminoso animado para el botón activo */}
+                {carrito.length > 0 && (
+                   <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300 ease-out z-0 rounded-2xl"></div>
+                )}
               </>
             )}
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

@@ -43,6 +43,7 @@ export const ventasService = {
       .from('venta_detalles')
       .select(`
         cantidad,
+        receta_id,
         recetas (
           nombre,
           precio_venta
@@ -55,16 +56,18 @@ export const ventasService = {
     const agrupado = {};
     if (data) {
       data.forEach(item => {
+        const id = item.receta_id;
         const nombre = item.recetas?.nombre || 'Desconocido';
-        if (!agrupado[nombre]) {
-          agrupado[nombre] = { 
+        if (!agrupado[id]) {
+          agrupado[id] = { 
+            receta_id: id,
             nombre, 
             cantidad: 0, 
             ingreso: 0 
           };
         }
-        agrupado[nombre].cantidad += item.cantidad;
-        agrupado[nombre].ingreso += item.cantidad * (item.recetas?.precio_venta || 0);
+        agrupado[id].cantidad += item.cantidad;
+        agrupado[id].ingreso += item.cantidad * (item.recetas?.precio_venta || 0);
       });
     }
 

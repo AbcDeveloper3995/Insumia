@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, TrendingUp, AlertCircle, ChefHat, BarChart2 } from 'lucide-react';
+import { Package, TrendingUp, AlertCircle, ChefHat, BarChart2, ChevronRight, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { insumosService } from '../services/api/insumos';
 import { recetasService } from '../services/api/recetas';
@@ -7,6 +7,7 @@ import { ventasService } from '../services/api/ventas';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
 } from 'recharts';
+import { motion } from 'framer-motion';
 
 export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -14,7 +15,8 @@ export const Dashboard = () => {
     insumosCount: 0,
     alertasStock: 0,
     recetasCount: 0,
-    ventasHoy: 0
+    ventasHoy: 0,
+    gananciaTotal: 0
   });
   const [topProductos, setTopProductos] = useState([]);
 
@@ -36,13 +38,26 @@ export const Dashboard = () => {
         // 4. Cargar Top Productos para Gráfico
         const productosData = await ventasService.getVentasPorPlatillo();
         // Tomar solo los top 5
-        const top5 = productosData.slice(0, 5);
+        const top5 = [...productosData].sort((a, b) => b.cantidad - a.cantidad).slice(0, 5);
+
+        // 5. Calcular Ganancia Real Histórica
+        let gananciaTotal = 0;
+        productosData.forEach(item => {
+           const receta = recetasActivas.find(r => r.id === item.receta_id);
+           if (receta) {
+             const costoUnitario = Number(receta.costo_total) || 0;
+             const precioVenta = Number(receta.precio_venta) || 0;
+             const gananciaUnitaria = precioVenta - costoUnitario;
+             gananciaTotal += gananciaUnitaria * item.cantidad;
+           }
+        });
 
         setStats({
           insumosCount: insumos?.length || 0,
           alertasStock: alertas.length,
           recetasCount: recetasActivas.length,
-          ventasHoy: ventasHoyData?.length || 0
+          ventasHoy: ventasHoyData?.length || 0,
+          gananciaTotal
         });
 
         setTopProductos(top5);
@@ -59,9 +74,27 @@ export const Dashboard = () => {
   // Paleta de colores para el gráfico
   const COLORS = ['#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef'];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="flex h-full w-full bg-slate-50 overflow-hidden rounded-2xl border border-slate-200/60 shadow-sm">
-      <div className="flex-1 overflow-y-auto bg-slate-50/50 p-8">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="flex h-full w-full bg-slate-50/50 overflow-hidden rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+    >
+      <div className="flex-1 overflow-y-auto p-8 lg:p-10">
         
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -79,80 +112,155 @@ export const Dashboard = () => {
         </div>
         
         {/* KPIs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10"
+        >
           
           {/* KPI 1 */}
-          <Link to="/inventario" className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all cursor-pointer block group">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-semibold text-slate-400 mb-1 tracking-wide uppercase">Insumos</p>
-                <h3 className="text-3xl font-black text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">
-                  {stats.insumosCount}
-                </h3>
-              </div>
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:scale-110 transition-transform">
-                <Package size={24} />
+          <motion.div variants={itemVariants}>
+            <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-blue-200 hover:shadow-[0_8px_30px_rgb(59,130,246,0.1)] hover:-translate-y-1 transition-all duration-300 block group relative">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Insumos</p>
+                    <div className="relative flex items-center group/tooltip">
+                      <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help" />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 text-center pointer-events-none">
+                        Total de materias primas o insumos registrados en el sistema.
+                      </div>
+                    </div>
+                  </div>
+                  <h3 className="text-4xl font-black text-slate-800 tracking-tighter group-hover:text-blue-600 transition-colors">
+                    {stats.insumosCount}
+                  </h3>
+                </div>
+                <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                  <Package size={24} strokeWidth={2.5} />
+                </div>
               </div>
             </div>
-          </Link>
+          </motion.div>
 
           {/* KPI 2 */}
-          <Link to="/inventario" className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 hover:border-amber-200 hover:shadow-md transition-all cursor-pointer block group">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-semibold text-slate-400 mb-1 tracking-wide uppercase">Alertas Stock</p>
-                <h3 className={`text-3xl font-black tracking-tight transition-colors ${stats.alertasStock > 0 ? 'text-amber-500 group-hover:text-amber-600' : 'text-slate-800 group-hover:text-amber-500'}`}>
-                  {stats.alertasStock}
-                </h3>
-              </div>
-              <div className={`p-3 rounded-xl group-hover:scale-110 transition-transform ${stats.alertasStock > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-50 text-slate-400'}`}>
-                <AlertCircle size={24} />
+          <motion.div variants={itemVariants}>
+            <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-amber-200 hover:shadow-[0_8px_30px_rgb(245,158,11,0.1)] hover:-translate-y-1 transition-all duration-300 block group relative">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Alertas Stock</p>
+                    <div className="relative flex items-center group/tooltip">
+                      <Info size={14} className="text-slate-400 hover:text-amber-500 transition-colors cursor-help" />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 text-center pointer-events-none">
+                        Insumos que se encuentran por debajo o en su nivel mínimo de stock.
+                      </div>
+                    </div>
+                  </div>
+                  <h3 className={`text-4xl font-black tracking-tighter transition-colors ${stats.alertasStock > 0 ? 'text-amber-500 group-hover:text-amber-600' : 'text-slate-800 group-hover:text-amber-500'}`}>
+                    {stats.alertasStock}
+                  </h3>
+                </div>
+                <div className={`p-3.5 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm ${stats.alertasStock > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-50 text-slate-400'}`}>
+                  <AlertCircle size={24} strokeWidth={2.5} />
+                </div>
               </div>
             </div>
-          </Link>
+          </motion.div>
 
           {/* KPI 3 */}
-          <Link to="/recetas" className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer block group">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-semibold text-slate-400 mb-1 tracking-wide uppercase">Menú Activo</p>
-                <h3 className="text-3xl font-black text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors">
-                  {stats.recetasCount}
-                </h3>
-              </div>
-              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform">
-                <ChefHat size={24} />
+          <motion.div variants={itemVariants}>
+            <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-indigo-200 hover:shadow-[0_8px_30px_rgb(99,102,241,0.1)] hover:-translate-y-1 transition-all duration-300 block group relative">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Menú Activo</p>
+                    <div className="relative flex items-center group/tooltip">
+                      <Info size={14} className="text-slate-400 hover:text-indigo-500 transition-colors cursor-help" />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 text-center pointer-events-none">
+                        Cantidad de platillos disponibles para la venta.
+                      </div>
+                    </div>
+                  </div>
+                  <h3 className="text-4xl font-black text-slate-800 tracking-tighter group-hover:text-indigo-600 transition-colors">
+                    {stats.recetasCount}
+                  </h3>
+                </div>
+                <div className="p-3.5 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                  <ChefHat size={24} strokeWidth={2.5} />
+                </div>
               </div>
             </div>
-          </Link>
+          </motion.div>
 
           {/* KPI 4 */}
-          <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-semibold text-slate-400 mb-1 tracking-wide uppercase">Ventas Hoy</p>
-                <h3 className="text-3xl font-black text-slate-800 tracking-tight">
-                  {stats.ventasHoy}
-                </h3>
-              </div>
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                <TrendingUp size={24} />
+          <motion.div variants={itemVariants}>
+            <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-emerald-200 hover:shadow-[0_8px_30px_rgb(16,185,129,0.1)] hover:-translate-y-1 transition-all duration-300 block group relative">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Ventas Hoy</p>
+                    <div className="relative flex items-center group/tooltip">
+                      <Info size={14} className="text-slate-400 hover:text-emerald-500 transition-colors cursor-help" />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 text-center pointer-events-none">
+                        Número total de ventas realizadas en el día de hoy.
+                      </div>
+                    </div>
+                  </div>
+                  <h3 className="text-4xl font-black text-slate-800 tracking-tighter group-hover:text-emerald-600 transition-colors">
+                    {stats.ventasHoy}
+                  </h3>
+                </div>
+                <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                  <TrendingUp size={24} strokeWidth={2.5} />
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-        </div>
+          {/* KPI 5: Ganancia Real */}
+          <motion.div variants={itemVariants}>
+            <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-sky-200 hover:shadow-[0_8px_30px_rgb(14,165,233,0.1)] hover:-translate-y-1 transition-all duration-300 block group relative">
+              <div className="flex justify-between items-start">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Ganancia Total</p>
+                    <div className="relative flex items-center group/tooltip">
+                      <Info size={14} className="text-slate-400 hover:text-sky-500 transition-colors cursor-help" />
+                      <div className="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 text-center pointer-events-none">
+                        Beneficio neto histórico (precio de venta - costo de insumos) acumulado.
+                      </div>
+                    </div>
+                  </div>
+                  <h3 className="text-4xl font-black text-slate-800 tracking-tighter group-hover:text-sky-600 transition-colors truncate" title={`$${stats.gananciaTotal.toFixed(2)}`}>
+                    ${stats.gananciaTotal.toFixed(2)}
+                  </h3>
+                </div>
+                <div className="p-3.5 bg-sky-50 text-sky-600 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm ml-2 flex-shrink-0">
+                  <TrendingUp size={24} strokeWidth={2.5} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+        </motion.div>
 
         {/* Gráficos y Tablas Auxiliares */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        >
           
           {/* Gráfico de Barras: Top Productos */}
-          <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100">
-            <div className="flex items-center mb-6">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg mr-3">
-                <BarChart2 size={20} />
+          <div className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100">
+            <div className="flex items-center mb-8">
+              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl mr-4 shadow-sm">
+                <BarChart2 size={20} strokeWidth={2.5} />
               </div>
-              <h2 className="text-lg font-bold text-slate-800">Top 5 Productos Más Vendidos</h2>
+              <h2 className="text-xl font-bold text-slate-800 tracking-tight">Top 5 Productos Más Vendidos</h2>
             </div>
             
             {loading ? (
@@ -196,37 +304,45 @@ export const Dashboard = () => {
             )}
           </div>
 
-          {/* Panel Auxiliar Informativo */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl shadow-lg border border-slate-700 text-white flex flex-col justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight mb-2">¡Tu restaurante está funcionando!</h2>
-              <p className="text-slate-300 text-sm leading-relaxed mb-6">
-                Insumia está registrando automáticamente las ventas del POS, descontando los gramos de tus insumos, y alertándote si te quedas sin stock. 
+          {/* Panel Auxiliar Informativo (Bento Box) */}
+          <div className="bg-slate-900 p-8 rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col justify-between relative overflow-hidden group">
+            
+            {/* Elemento de diseño de fondo simple */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-full mix-blend-screen filter blur-[80px] opacity-40"></div>
+            
+            <div className="relative z-10">
+              <div className="inline-flex px-3 py-1 bg-white/10 rounded-full text-xs font-bold tracking-widest uppercase mb-4 border border-white/5 text-slate-200">
+                Estado Operativo
+              </div>
+              <h2 className="text-3xl font-black tracking-tight mb-3 text-white">Todo en Orden</h2>
+              <p className="text-slate-300 text-sm leading-relaxed mb-8">
+                Insumia está registrando automáticamente las ventas, descontando los gramos de tus insumos, y vigilando tu stock. 
               </p>
               
-              <ul className="space-y-3">
-                <li className="flex items-center text-sm text-slate-200">
-                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-3"></div>
-                  Inventario descontándose en tiempo real
+              <ul className="space-y-4">
+                <li className="flex items-center text-sm font-medium text-slate-200">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full mr-4 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+                  Inventario sincronizado
                 </li>
-                <li className="flex items-center text-sm text-slate-200">
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-3"></div>
-                  Costos de recetas bajo control
+                <li className="flex items-center text-sm font-medium text-slate-200">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mr-4 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
+                  Costos calculados
                 </li>
-                <li className="flex items-center text-sm text-slate-200">
-                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mr-3"></div>
-                  Alertas de compras automatizadas
+                <li className="flex items-center text-sm font-medium text-slate-200">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full mr-4 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></div>
+                  Monitor de mermas activo
                 </li>
               </ul>
             </div>
             
-            <Link to="/ventas" className="mt-8 bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-6 rounded-xl transition-colors text-center shadow-lg shadow-blue-500/20">
-              Ir al Punto de Venta
+            <Link to="/ventas" className="relative z-10 mt-10 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-6 rounded-2xl transition-all duration-300 text-center flex items-center justify-center group/btn active:scale-95 shadow-md hover:shadow-lg">
+              <span>Ir al Punto de Venta</span>
+              <ChevronRight size={18} className="ml-2 opacity-70 group-hover/btn:translate-x-1 transition-transform" />
             </Link>
           </div>
 
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };

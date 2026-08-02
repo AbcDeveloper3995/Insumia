@@ -7,10 +7,35 @@ export const recetasService = {
   async getRecetas() {
     const { data, error } = await supabase
       .from('recetas')
-      .select('*')
+      .select(`
+        *,
+        ingredientes:receta_ingredientes!receta_id(
+          cantidad,
+          insumo:insumos(costo_unidad_compra, factor_conversion, porcentaje_rendimiento)
+        )
+      `)
       .order('nombre');
       
     if (error) throw error;
+
+    // Calcular el costo_total y tipo al vuelo para la lista
+    if (data) {
+      data.forEach(receta => {
+        let costoTotal = 0;
+        if (receta.ingredientes) {
+          receta.ingredientes.forEach(ing => {
+            if (ing.insumo) {
+              const costoBase = Number(ing.insumo.costo_unidad_compra) / Number(ing.insumo.factor_conversion);
+              const costoReal = costoBase / (Number(ing.insumo.porcentaje_rendimiento) / 100);
+              costoTotal += costoReal * Number(ing.cantidad);
+            }
+          });
+        }
+        receta.costo_total = costoTotal;
+        receta.tipo = receta.es_subreceta ? 'subreceta' : 'platillo';
+      });
+    }
+
     return data;
   },
 
@@ -22,7 +47,7 @@ export const recetasService = {
       .from('recetas')
       .select(`
         *,
-        ingredientes:receta_ingredientes(
+        ingredientes:receta_ingredientes!receta_id(
           id,
           insumo_id,
           cantidad,
@@ -69,7 +94,7 @@ export const recetasService = {
       const ingredientesInsert = ingredientes.map(ing => ({
         receta_id: nuevaReceta.id,
         insumo_id: ing.insumo_id,
-        cantidad: ing.cantidad_uso
+        cantidad: Number(ing.cantidad_uso)
       }));
 
       const { error: errorIng } = await supabase
@@ -114,7 +139,7 @@ export const recetasService = {
       const ingredientesInsert = ingredientes.map(ing => ({
         receta_id: id,
         insumo_id: ing.insumo_id,
-        cantidad: ing.cantidad_uso
+        cantidad: Number(ing.cantidad_uso)
       }));
 
       const { error: errorIng } = await supabase

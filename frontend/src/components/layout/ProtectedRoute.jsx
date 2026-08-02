@@ -11,6 +11,7 @@ export const ProtectedRoute = () => {
   }
 
   // Si hay sesión, renderizar el layout con el Sidebar
+  return (
     <div className="flex h-screen bg-slate-100 overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex flex-col h-screen overflow-hidden p-4">

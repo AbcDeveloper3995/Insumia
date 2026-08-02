@@ -85,7 +85,21 @@ export const RecetasList = ({ recetas, onEdit, onDelete }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="space-y-5">
+      {/* Banner General de Información Financiera */}
+      <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 flex items-start space-x-3 shadow-sm">
+        <div className="bg-blue-100 text-blue-600 p-1.5 rounded-lg shrink-0">
+          <Calculator size={18} />
+        </div>
+        <div>
+          <h4 className="text-sm font-bold text-slate-700">Entendiendo el Costo FC (Food Cost)</h4>
+          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+            El <strong>Costo FC</strong> es la suma del costo real de todos los ingredientes que componen un platillo. Como regla de oro, este costo <strong>no debe superar el 35%</strong> del precio de venta para asegurar que tu restaurante sea rentable. Si el margen cae por debajo del 65%, la tarjeta te alertará.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {recetas.map((receta) => {
         // Cálculos de márgenes
         const costo = Number(receta.costo_total) || 0;
@@ -99,74 +113,85 @@ export const RecetasList = ({ recetas, onEdit, onDelete }) => {
         return (
           <div 
             key={receta.id} 
-            className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow overflow-hidden flex flex-col relative"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300 flex flex-col relative group hover:-translate-y-0.5"
           >
-            {/* Cabecera Tarjeta */}
-            <div className="p-5 border-b border-slate-100 flex justify-between items-start">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
-                  <ChefHat size={24} />
+            {/* Imagen Placeholder Pequeña */}
+            <div className="h-16 bg-gradient-to-br from-slate-100 to-slate-200 relative flex items-center justify-center shrink-0 rounded-t-xl overflow-hidden">
+              <ChefHat size={24} className="text-slate-300 group-hover:scale-110 transition-transform duration-300" />
+              {alertaMargen && (
+                <div className="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                  Alerta
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 line-clamp-1" title={receta.nombre}>
-                    {receta.nombre}
-                  </h3>
-                  <span className="bg-slate-100 text-slate-500 text-xs px-2 py-0.5 rounded capitalize">
-                    {receta.tipo}
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Contenido / Finanzas */}
-            <div className="p-5 flex-1">
-              <div className="flex justify-between items-end mb-4">
-                <div>
-                  <p className="text-sm text-slate-500 mb-1">Precio Venta</p>
-                  <p className="text-2xl font-bold text-slate-800">${precio.toFixed(2)}</p>
+            {/* Contenido Ultra Compacto */}
+            <div className="p-3 flex-1 flex flex-col">
+              <div className="mb-2 flex justify-between items-start">
+                <h3 className="font-bold text-sm text-slate-800 line-clamp-1 leading-tight flex-1 mr-2" title={receta.nombre}>
+                  {receta.nombre}
+                </h3>
+              </div>
+
+              {/* Bloque Financiero - Bento Pequeño */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="bg-slate-50 rounded-lg p-2 border border-slate-100">
+                  <p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5" title="Food Cost">Costo FC</p>
+                  <p className="text-sm font-bold text-rose-500 leading-none">${costo.toFixed(2)}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-slate-500 mb-1">Costo</p>
-                  <p className="text-lg font-bold text-rose-500">${costo.toFixed(2)}</p>
+                <div className="bg-slate-50 rounded-lg p-2 border border-slate-100">
+                  <p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Venta</p>
+                  <p className="text-sm font-bold text-slate-800 leading-none">${precio.toFixed(2)}</p>
                 </div>
               </div>
               
-              <div className={`p-3 rounded-lg border flex justify-between items-center ${alertaMargen ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
-                <div className="flex items-center space-x-2">
-                  <TrendingUp size={16} className={alertaMargen ? 'text-amber-600' : 'text-emerald-600'} />
-                  <span className={`text-sm font-medium ${alertaMargen ? 'text-amber-700' : 'text-emerald-700'}`}>
-                    Margen
-                  </span>
+              {/* Rentabilidad */}
+              <div className={`mt-auto p-2 rounded-lg border flex justify-between items-center ${alertaMargen ? 'bg-red-50/50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                <div>
+                  <p className={`text-[9px] font-bold uppercase mb-0.5 ${alertaMargen ? 'text-red-500' : 'text-emerald-600'}`}>
+                    Ganancia
+                  </p>
+                  <p className={`font-black text-sm leading-none ${alertaMargen ? 'text-red-600' : 'text-emerald-700'}`}>
+                    ${ganancia.toFixed(2)}
+                  </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`font-bold ${alertaMargen ? 'text-amber-700' : 'text-emerald-700'}`}>
+                <div className="text-right">
+                  <p className={`text-[9px] font-bold uppercase mb-0.5 ${alertaMargen ? 'text-red-400' : 'text-emerald-500'}`}>
+                    Margen
+                  </p>
+                  <p className={`text-sm font-black leading-none ${alertaMargen ? 'text-red-600' : 'text-emerald-700'}`}>
                     {margen.toFixed(1)}%
-                  </span>
-                  {alertaMargen && <AlertTriangle size={16} className="text-amber-600" title="Margen muy bajo (Sugerido: >65%)" />}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Botones de Acción */}
-            <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2">
-              <button 
-                onClick={() => onEdit(receta)}
-                className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                title="Editar Receta"
-              >
-                <Edit size={18} />
-              </button>
-              <button 
-                onClick={() => onDelete(receta.id)}
-                className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                title="Eliminar Receta"
-              >
-                <Trash2 size={18} />
-              </button>
+            {/* Footer Acciones Pequeño */}
+            <div className="px-3 py-2 bg-slate-50/50 border-t border-slate-100 flex justify-between items-center shrink-0 rounded-b-xl">
+              <span className="text-[9px] bg-white border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest">
+                {receta.tipo.substring(0,3)}
+              </span>
+              <div className="flex space-x-1">
+                <button 
+                  onClick={() => onEdit(receta)}
+                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  title="Editar Receta"
+                >
+                  <Edit size={14} />
+                </button>
+                <button 
+                  onClick={() => onDelete(receta.id)}
+                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  title="Eliminar Receta"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
           </div>
         );
       })}
+    </div>
     </div>
   );
 };

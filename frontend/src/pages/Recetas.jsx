@@ -14,6 +14,10 @@ export const Recetas = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReceta, setEditingReceta] = useState(null);
   const [mensajeExito, setMensajeExito] = useState('');
+  
+  // Estado para modal de confirmación de eliminación
+  const [recetaToDelete, setRecetaToDelete] = useState(null);
+
 
   const loadRecetas = async () => {
     try {
@@ -39,6 +43,7 @@ export const Recetas = () => {
         setEditingReceta(fullReceta);
       } catch (error) {
         console.error('Error cargando detalles:', error);
+        alert('No se pudieron cargar los detalles de la receta. Error: ' + error.message);
         return;
       }
     } else {
@@ -79,14 +84,27 @@ export const Recetas = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar esta receta? Se borrarán sus ingredientes también.')) {
-      try {
-        await recetasService.deleteReceta(id);
-        loadRecetas();
-      } catch (error) {
-        console.error('Error eliminando receta:', error);
-      }
+  const handleDeleteRequest = (recetaId) => {
+    // Buscar la receta completa para mostrar el nombre en el modal
+    const receta = recetas.find(r => r.id === recetaId);
+    if (receta) {
+      setRecetaToDelete(receta);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!recetaToDelete) return;
+    
+    try {
+      await recetasService.deleteReceta(recetaToDelete.id);
+      setMensajeExito(`¡Receta "${recetaToDelete.nombre}" eliminada correctamente!`);
+      loadRecetas();
+      setTimeout(() => setMensajeExito(''), 3000);
+    } catch (error) {
+      console.error('Error eliminando receta:', error);
+      alert('Ocurrió un error al intentar eliminar la receta.');
+    } finally {
+      setRecetaToDelete(null);
     }
   };
 
@@ -149,7 +167,7 @@ export const Recetas = () => {
           <RecetasList 
             recetas={filteredRecetas} 
             onEdit={handleOpenModal}
-            onDelete={handleDelete} 
+            onDelete={handleDeleteRequest} 
           />
         )}
         </div>
@@ -164,16 +182,55 @@ export const Recetas = () => {
         <RecetaForm
           onSubmit={handleSubmit}
           defaultValues={editingReceta ? {
-            nombre: editingReceta.nombre,
-            tipo: editingReceta.tipo,
-            precio_venta: editingReceta.precio_venta,
-            costo_total: editingReceta.costo_total,
-            ingredientes: editingReceta.ingredientes.map(ing => ({
+            nombre: editingReceta.nombre || '',
+            tipo: editingReceta.tipo || 'platillo',
+            precio_venta: editingReceta.precio_venta || 0,
+            costo_total: editingReceta.costo_total || 0,
+            ingredientes: (editingReceta.ingredientes || []).map(ing => ({
               insumo_id: ing.insumo_id,
               cantidad_uso: ing.cantidad_uso
             }))
           } : null}
         />
+      </Modal>
+
+      {/* Modal de Confirmación de Eliminación en Cascada */}
+      <Modal
+        isOpen={!!recetaToDelete}
+        onClose={() => setRecetaToDelete(null)}
+        title="⚠️ Confirmar Eliminación Permanente"
+        maxWidth="max-w-md"
+      >
+        {recetaToDelete && (
+          <div className="text-slate-700">
+            <p className="mb-4">
+              Estás a punto de eliminar la receta <strong>{recetaToDelete.nombre}</strong>.
+            </p>
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6 text-sm">
+              <p className="font-bold mb-2">🚨 Consecuencias en Cascada:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>La receta desaparecerá del catálogo.</li>
+                <li>Se eliminarán todos sus <strong>ingredientes vinculados</strong>.</li>
+                <li>Se eliminará del <strong>historial de ventas</strong> (venta_detalles) si alguna vez fue cobrada.</li>
+              </ul>
+              <p className="mt-3 font-medium">Esta acción NO se puede deshacer.</p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setRecetaToDelete(null)}
+                className="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm hover:shadow-md"
+              >
+                Sí, Eliminar Permanentemente
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

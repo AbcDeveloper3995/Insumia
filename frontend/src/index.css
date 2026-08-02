@@ -9,7 +9,9 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background-color: #f8fafc;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  background-color: #f8fafc; /* Color de fondo muy claro para contraste limpio */
   color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
