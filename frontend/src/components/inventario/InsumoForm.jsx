@@ -103,41 +103,20 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false }
         </div>
       </div>
 
-      {/* Costo e Inventario Inicial */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Alertas */}
+      <div className="grid grid-cols-1 gap-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
-            Costo por {unidadCompra.toUpperCase()} ($)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            {...register('costo_unidad_compra', { required: true, min: 0 })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Mínimo Alerta ({unidadBase.toUpperCase()})
+            Stock Mínimo para Alerta ({unidadBase.toUpperCase()})
           </label>
           <input
             type="number"
             {...register('umbral_minimo', { required: true, min: 0 })}
             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
           />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Stock Inicial ({unidadBase.toUpperCase()})
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            {...register('cantidad_actual_base', { required: true })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-          />
+          <span className="text-xs text-slate-500 mt-1 block">
+            Te avisaremos cuando el inventario caiga por debajo de esta cantidad.
+          </span>
         </div>
       </div>
 

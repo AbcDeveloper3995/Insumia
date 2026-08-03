@@ -2,64 +2,91 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { insumosService } from '../services/api/insumos';
+import { comprasService } from '../services/api/compras';
+import { cajaService } from '../services/api/caja';
 import { Modal } from '../components/common/Modal';
 import { InsumoForm } from '../components/inventario/InsumoForm';
 import { InsumosList } from '../components/inventario/InsumosList';
+import { InsumoCompraInicial } from '../components/inventario/InsumoCompraInicial';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
+import { supabase } from '../services/api/client';
 
 export const Inventario = () => {
   const { session } = useAuth();
   const [insumos, setInsumos] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
+  const [cajaActiva, setCajaActiva] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingInsumo, setEditingInsumo] = useState(null);
-  const [errorCarga, setErrorCarga] = useState(null);
   
-  const restauranteId = session?.user?.user_metadata?.restaurante_id || session?.user?.id;
-  // Nota: En un caso real, el restauranteId vendría del perfil del usuario (auth.obtener_restaurante_id).
-  // Como estamos usando RLS, el backend filtrará los registros del usuario actual automáticamente,
-  // pero necesitamos enviar el restaurante_id al insertar.
-  // Para este MVP (1 a 1), podemos buscar el restaurante_id real o usar una función RPC.
-  // Sin embargo, podemos extraerlo llamando a la BD. Por simplicidad, asumimos que se inyectará.
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalStep, setModalStep] = useState(1); // 1 = form insumo, 2 = compra inicial
+  const [editingInsumo, setEditingInsumo] = useState(null);
+  const [createdInsumo, setCreatedInsumo] = useState(null);
+  
+  const [errorCarga, setErrorCarga] = useState(null);
 
-  // Fetch Insumos
-  const loadInsumos = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
       setErrorCarga(null);
-      const data = await insumosService.getInsumos();
-      setInsumos(data || []);
+      
+      const insumosData = await insumosService.getInsumos();
+      setInsumos(insumosData || []);
+      
+      if (session?.user?.id) {
+         const { data: userData } = await supabase
+          .from('usuarios')
+          .select('restaurante_id')
+          .eq('id', session.user.id)
+          .single();
+          
+         if (userData?.restaurante_id) {
+            const provsData = await comprasService.getProveedores(userData.restaurante_id);
+            setProveedores(provsData || []);
+            
+            const caja = await cajaService.getCajaAbierta(userData.restaurante_id);
+            setCajaActiva(caja);
+         }
+      }
     } catch (error) {
-      console.error('Error cargando insumos:', error);
-      setErrorCarga(error.message || 'Error desconocido al cargar insumos');
+      console.error('Error cargando datos:', error);
+      setErrorCarga(error.message || 'Error desconocido al cargar datos');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadInsumos();
+    loadData();
   }, []);
 
   const handleOpenModal = (insumo = null) => {
     setEditingInsumo(insumo);
+    setCreatedInsumo(null);
+    setModalStep(1);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenCompraInicial = (insumo) => {
+    setEditingInsumo(null);
+    setCreatedInsumo(insumo);
+    setModalStep(2);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setEditingInsumo(null);
+    setCreatedInsumo(null);
+    setModalStep(1);
     setIsModalOpen(false);
   };
 
-  const handleSubmit = async (formData) => {
+  // Paso 1: Crear Insumo
+  const handleInsumoSubmit = async (formData) => {
     try {
-      // Necesitamos el restaurante_id para insertar
-      // Lo obtenemos de los datos del usuario actual (en un flujo real, del AuthContext)
-      // Por ahora pasamos un query a `usuarios` para sacarlo
-      
-      const { supabase } = await import('../services/api/client');
       const { data: userData } = await supabase
         .from('usuarios')
         .select('restaurante_id')
@@ -74,13 +101,19 @@ export const Inventario = () => {
       if (editingInsumo) {
         await insumosService.updateInsumo(editingInsumo.id, insumoData);
         toast.success('¡Insumo actualizado correctamente!');
+        handleCloseModal();
+        await loadData();
       } else {
-        await insumosService.createInsumo(insumoData);
+        const newInsumo = await insumosService.createInsumo(insumoData);
         toast.success('¡Insumo creado correctamente!');
+        
+        // Pasamos al paso 2
+        setCreatedInsumo(newInsumo);
+        setModalStep(2);
+        // Recargamos silenciosamente los insumos para que la tabla de fondo se actualice
+        const insumosList = await insumosService.getInsumos();
+        setInsumos(insumosList || []);
       }
-      
-      handleCloseModal();
-      await loadInsumos();
       
     } catch (error) {
       console.error('Error guardando insumo:', error);
@@ -88,12 +121,54 @@ export const Inventario = () => {
     }
   };
 
+  // Acción en Paso 2: Crear proveedor al vuelo
+  const handleAddProveedor = async (nombre) => {
+      try {
+          const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', session.user.id).single();
+          const newProv = await comprasService.createProveedor(userData.restaurante_id, { nombre: nombre.trim() });
+          
+          // Actualizamos la lista local
+          const provsData = await comprasService.getProveedores(userData.restaurante_id);
+          setProveedores(provsData || []);
+          
+          toast.success('Proveedor creado');
+          return newProv;
+      } catch (err) {
+          toast.error('Error al crear proveedor');
+          throw err;
+      }
+  };
+
+  // Paso 2: Registrar compra inicial
+  const handleCompraInicialSubmit = async ({ proveedor_id, cantidad, costo_total, pagarDeCaja }) => {
+      try {
+          const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', session.user.id).single();
+          const detalles = [{
+              insumo_id: createdInsumo.id,
+              cantidad: cantidad,
+              precio_unitario: costo_total / cantidad
+          }];
+          
+          const estadoCompra = (pagarDeCaja && cajaActiva) ? 'pagada' : 'pendiente';
+          const cajaId = (pagarDeCaja && cajaActiva) ? cajaActiva.id : null;
+          
+          await comprasService.registrarCompra(userData.restaurante_id, proveedor_id, estadoCompra, detalles, cajaId);
+          
+          toast.success('Compra inicial registrada');
+          handleCloseModal();
+          await loadData();
+      } catch (err) {
+          console.error(err);
+          toast.error('Error al registrar compra inicial');
+      }
+  };
+
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este insumo?')) {
       try {
         await insumosService.deleteInsumo(id);
         toast.success('Insumo eliminado');
-        loadInsumos();
+        loadData();
       } catch (error) {
         console.error('Error eliminando:', error);
         toast.error('Error al eliminar');
@@ -101,7 +176,6 @@ export const Inventario = () => {
     }
   };
 
-  // Filtrar insumos localmente
   const filteredInsumos = useMemo(() => {
     if (!searchTerm) return insumos;
     return insumos.filter(insumo => 
@@ -109,11 +183,31 @@ export const Inventario = () => {
     );
   }, [insumos, searchTerm]);
 
+  // UI del Stepper para el Modal
+  const modalTitle = (
+    <div className="flex items-center gap-3 text-sm select-none">
+      <div className={`flex items-center gap-2 ${modalStep === 1 ? 'text-blue-700 font-bold' : 'text-emerald-600 font-medium'}`}>
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${modalStep === 1 ? 'bg-blue-600 text-white shadow-sm' : 'bg-emerald-100 text-emerald-700'}`}>
+          {modalStep === 1 ? '1' : '✓'}
+        </div>
+        Datos Base
+      </div>
+      
+      <div className={`w-8 h-[2px] rounded-full ${modalStep === 2 ? 'bg-blue-600' : 'bg-slate-200'}`}></div>
+      
+      <div className={`flex items-center gap-2 ${modalStep === 2 ? 'text-blue-700 font-bold' : 'text-slate-400 font-medium'}`}>
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${modalStep === 2 ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
+          2
+        </div>
+        Compra Inicial
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex h-full w-full bg-slate-50 overflow-hidden rounded-2xl border border-slate-200/60 shadow-sm">
       <div className="flex-1 flex flex-col h-full bg-slate-50/50">
         
-        {/* Header Premium Estándar */}
         <div className="px-8 py-6 bg-white border-b border-slate-100 shrink-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Inventario e Insumos</h1>
@@ -121,7 +215,6 @@ export const Inventario = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            {/* Buscador Estándar */}
             <div className="relative w-full sm:w-72">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-slate-400" />
@@ -145,37 +238,46 @@ export const Inventario = () => {
           </div>
         </div>
 
-        {/* Área de Contenido */}
         <div className="flex-1 overflow-y-auto p-8">
+            {errorCarga && (
+              <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg font-medium">
+                <strong>Error de carga:</strong> {errorCarga}
+              </div>
+            )}
 
-        {errorCarga && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg font-medium">
-            <strong>Error de carga:</strong> {errorCarga}
-            <br/><span className="text-sm">Por favor, compártele este error a Antigravity.</span>
-          </div>
-        )}
-
-        {loading ? (
-          <LoadingSpinner text="Cargando catálogo..." />
-        ) : (
-          <InsumosList 
-            insumos={filteredInsumos} 
-            onEdit={handleOpenModal} 
-            onDelete={handleDelete} 
-          />
-        )}
+            {loading ? (
+              <LoadingSpinner text="Cargando catálogo..." />
+            ) : (
+              <InsumosList 
+                insumos={filteredInsumos} 
+                onEdit={handleOpenModal} 
+                onDelete={handleDelete} 
+                onInitialPurchase={handleOpenCompraInicial}
+              />
+            )}
         </div>
       </div>
 
       <Modal
         isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title={editingInsumo ? 'Editar Insumo' : 'Registrar Nuevo Insumo'}
+        onClose={modalStep === 2 ? null : handleCloseModal} // Prevenir cierre fácil en paso 2 sin skipear
+        title={editingInsumo ? 'Editar Insumo' : modalTitle}
       >
-        <InsumoForm
-          onSubmit={handleSubmit}
-          defaultValues={editingInsumo}
-        />
+        {modalStep === 1 ? (
+            <InsumoForm
+              onSubmit={handleInsumoSubmit}
+              defaultValues={editingInsumo}
+            />
+        ) : (
+            <InsumoCompraInicial
+              insumo={createdInsumo}
+              proveedores={proveedores}
+              cajaActiva={cajaActiva}
+              onAddProveedor={handleAddProveedor}
+              onSubmit={handleCompraInicialSubmit}
+              onSkip={() => handleCloseModal()}
+            />
+        )}
       </Modal>
     </div>
   );
