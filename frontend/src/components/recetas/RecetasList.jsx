@@ -174,14 +174,14 @@ export const RecetasList = ({ recetas, onEdit, onDelete }) => {
               <div className="flex space-x-1">
                 <button 
                   onClick={() => onEdit(receta)}
-                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
                   title="Editar Receta"
                 >
                   <Edit size={14} />
                 </button>
                 <button 
                   onClick={() => onDelete(receta.id)}
-                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
                   title="Eliminar Receta"
                 >
                   <Trash2 size={14} />

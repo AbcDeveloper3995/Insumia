@@ -8,10 +8,12 @@ export const ventasService = {
    * @param {string} restauranteId UUID del restaurante
    * @param {Array} articulos Arreglo de { receta_id, cantidad }
    */
-  async registrarVenta(restauranteId, articulos) {
+  async registrarVenta(restauranteId, articulos, cajaId = null, metodoPago = 'efectivo') {
     const { data, error } = await supabase.rpc('registrar_venta', {
       p_restaurante_id: restauranteId,
-      p_articulos: articulos
+      p_detalles: articulos,
+      p_caja_id: cajaId,
+      p_metodo_pago: metodoPago
     });
 
     if (error) throw error;
@@ -35,10 +37,9 @@ export const ventasService = {
   },
 
   /**
-   * Obtiene el desglose de platillos vendidos para gráficos
+   * Obtiene el desglose de platillos vendidos para gráficos del Dashboard (histórico agrupado)
    */
   async getVentasPorPlatillo() {
-    // Para gráficos básicos, traemos todos los detalles (en producción filtraríamos por fecha)
     const { data, error } = await supabase
       .from('venta_detalles')
       .select(`
@@ -52,25 +53,51 @@ export const ventasService = {
 
     if (error) throw error;
 
-    // Agrupar y sumar
     const agrupado = {};
     if (data) {
       data.forEach(item => {
         const id = item.receta_id;
         const nombre = item.recetas?.nombre || 'Desconocido';
         if (!agrupado[id]) {
-          agrupado[id] = { 
-            receta_id: id,
-            nombre, 
-            cantidad: 0, 
-            ingreso: 0 
-          };
+          agrupado[id] = { receta_id: id, nombre, cantidad: 0, ingreso: 0 };
         }
         agrupado[id].cantidad += item.cantidad;
         agrupado[id].ingreso += item.cantidad * (item.recetas?.precio_venta || 0);
       });
     }
+    return Object.values(agrupado).sort((a, b) => b.cantidad - a.cantidad);
+  },
 
-    return Object.values(agrupado).sort((a, b) => b.cantidad - a.cantidad); // Ordenar por más vendidos
+  /**
+   * Obtiene datos planos de ventas con fechas para el módulo de Informes
+   */
+  async getVentasReporte(startDate = null, endDate = null) {
+    let query = supabase
+      .from('venta_detalles')
+      .select(`
+        cantidad,
+        receta_id,
+        recetas (
+          nombre,
+          precio_venta,
+          es_subreceta
+        ),
+        ventas!inner (
+          created_at
+        )
+      `);
+
+    if (startDate) {
+      query = query.gte('ventas.created_at', startDate.toISOString());
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      query = query.lte('ventas.created_at', end.toISOString());
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
   }
 };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -8,7 +8,9 @@ import {
   BarChart3,
   Menu,
   ChevronLeft,
-  LogOut
+  LogOut,
+  Wallet,
+  Truck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/auth/authService';
@@ -27,9 +29,11 @@ export const Sidebar = () => {
 
   const navItems = [
     { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
+    { to: '/caja', icon: <Wallet size={20} />, label: 'Caja' },
+    { to: '/ventas', icon: <ShoppingCart size={20} />, label: 'Punto de Venta' },
     { to: '/inventario', icon: <Package size={20} />, label: 'Insumos' },
     { to: '/recetas', icon: <ChefHat size={20} />, label: 'Recetas' },
-    { to: '/ventas', icon: <ShoppingCart size={20} />, label: 'Punto de Venta' },
+    { to: '/compras', icon: <Truck size={20} />, label: 'Compras' },
     { to: '/informes', icon: <BarChart3 size={20} />, label: 'Informes' },
   ];
 

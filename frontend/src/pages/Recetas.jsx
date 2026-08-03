@@ -5,6 +5,8 @@ import { recetasService } from '../services/api/recetas';
 import { RecetasList } from '../components/recetas/RecetasList';
 import { Modal } from '../components/common/Modal';
 import { RecetaForm } from '../components/recetas/RecetaForm';
+import toast from 'react-hot-toast';
+import { LoadingSpinner } from '../components/ui/Loading';
 
 export const Recetas = () => {
   const { session } = useAuth();
@@ -13,7 +15,6 @@ export const Recetas = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReceta, setEditingReceta] = useState(null);
-  const [mensajeExito, setMensajeExito] = useState('');
   
   // Estado para modal de confirmación de eliminación
   const [recetaToDelete, setRecetaToDelete] = useState(null);
@@ -43,7 +44,7 @@ export const Recetas = () => {
         setEditingReceta(fullReceta);
       } catch (error) {
         console.error('Error cargando detalles:', error);
-        alert('No se pudieron cargar los detalles de la receta. Error: ' + error.message);
+        toast.error('No se pudieron cargar los detalles de la receta.');
         return;
       }
     } else {
@@ -68,19 +69,18 @@ export const Recetas = () => {
 
       if (editingReceta) {
         await recetasService.updateRecetaConIngredientes(editingReceta.id, formData, formData.ingredientes);
-        setMensajeExito('¡Receta actualizada con éxito!');
+        toast.success('¡Receta actualizada con éxito!');
       } else {
         await recetasService.createRecetaConIngredientes(userData.restaurante_id, formData, formData.ingredientes);
-        setMensajeExito('¡Receta creada con éxito!');
+        toast.success('¡Receta creada con éxito!');
       }
       
       handleCloseModal();
       await loadRecetas();
       
-      setTimeout(() => setMensajeExito(''), 3000);
     } catch (error) {
       console.error('Error guardando receta:', error);
-      alert('Error al guardar la receta');
+      toast.error('Error al guardar la receta');
     }
   };
 
@@ -97,12 +97,11 @@ export const Recetas = () => {
     
     try {
       await recetasService.deleteReceta(recetaToDelete.id);
-      setMensajeExito(`¡Receta "${recetaToDelete.nombre}" eliminada correctamente!`);
+      toast.success(`¡Receta "${recetaToDelete.nombre}" eliminada correctamente!`);
       loadRecetas();
-      setTimeout(() => setMensajeExito(''), 3000);
     } catch (error) {
       console.error('Error eliminando receta:', error);
-      alert('Ocurrió un error al intentar eliminar la receta.');
+      toast.error('Ocurrió un error al intentar eliminar la receta.');
     } finally {
       setRecetaToDelete(null);
     }
@@ -155,14 +154,8 @@ export const Recetas = () => {
         {/* Área de Contenido */}
         <div className="flex-1 overflow-y-auto p-8">
 
-        {mensajeExito && (
-          <div className="mb-6 p-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-medium flex items-center shadow-sm">
-            {mensajeExito}
-          </div>
-        )}
-
         {loading ? (
-          <div className="text-center text-slate-500 py-12">Cargando catálogo...</div>
+          <LoadingSpinner text="Cargando recetario..." />
         ) : (
           <RecetasList 
             recetas={filteredRecetas} 
@@ -218,13 +211,13 @@ export const Recetas = () => {
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setRecetaToDelete(null)}
-                className="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors font-medium"
+                className="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors font-medium cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm hover:shadow-md"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm hover:shadow-md cursor-pointer"
               >
                 Sí, Eliminar Permanentemente
               </button>

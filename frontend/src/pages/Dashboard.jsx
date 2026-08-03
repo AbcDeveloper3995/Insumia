@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
 } from 'recharts';
 import { motion } from 'framer-motion';
+import { LoadingSpinner } from '../components/ui/Loading';
 
 export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -112,6 +113,9 @@ export const Dashboard = () => {
         </div>
         
         {/* KPIs Grid */}
+        {loading ? (
+          <div className="h-40"><LoadingSpinner text="Preparando tu resumen..." /></div>
+        ) : (
         <motion.div 
           variants={containerVariants}
           initial="hidden"
@@ -245,6 +249,7 @@ export const Dashboard = () => {
           </motion.div>
 
         </motion.div>
+        )}
 
         {/* Gráficos y Tablas Auxiliares */}
         <motion.div 
@@ -264,7 +269,7 @@ export const Dashboard = () => {
             </div>
             
             {loading ? (
-              <div className="h-64 flex items-center justify-center text-slate-400 text-sm">Cargando gráfico...</div>
+              <div className="h-64"><LoadingSpinner text="Generando gráficos..." /></div>
             ) : topProductos.length === 0 ? (
               <div className="h-64 flex items-center justify-center text-slate-400 text-sm">
                 Aún no hay ventas registradas para generar gráficos.

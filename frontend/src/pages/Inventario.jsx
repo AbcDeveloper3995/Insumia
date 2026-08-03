@@ -5,6 +5,8 @@ import { insumosService } from '../services/api/insumos';
 import { Modal } from '../components/common/Modal';
 import { InsumoForm } from '../components/inventario/InsumoForm';
 import { InsumosList } from '../components/inventario/InsumosList';
+import toast from 'react-hot-toast';
+import { LoadingSpinner } from '../components/ui/Loading';
 
 export const Inventario = () => {
   const { session } = useAuth();
@@ -13,7 +15,6 @@ export const Inventario = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInsumo, setEditingInsumo] = useState(null);
-  const [mensajeExito, setMensajeExito] = useState('');
   const [errorCarga, setErrorCarga] = useState(null);
   
   const restauranteId = session?.user?.user_metadata?.restaurante_id || session?.user?.id;
@@ -72,20 +73,18 @@ export const Inventario = () => {
 
       if (editingInsumo) {
         await insumosService.updateInsumo(editingInsumo.id, insumoData);
-        setMensajeExito('¡Insumo actualizado correctamente!');
+        toast.success('¡Insumo actualizado correctamente!');
       } else {
         await insumosService.createInsumo(insumoData);
-        setMensajeExito('¡Insumo creado correctamente!');
+        toast.success('¡Insumo creado correctamente!');
       }
       
       handleCloseModal();
-      await loadInsumos(); // Recargar lista y esperar
+      await loadInsumos();
       
-      // Ocultar mensaje después de 3s
-      setTimeout(() => setMensajeExito(''), 3000);
     } catch (error) {
       console.error('Error guardando insumo:', error);
-      alert('Hubo un error al guardar el insumo.');
+      toast.error('Hubo un error al guardar el insumo.');
     }
   };
 
@@ -93,9 +92,11 @@ export const Inventario = () => {
     if (window.confirm('¿Estás seguro de eliminar este insumo?')) {
       try {
         await insumosService.deleteInsumo(id);
+        toast.success('Insumo eliminado');
         loadInsumos();
       } catch (error) {
         console.error('Error eliminando:', error);
+        toast.error('Error al eliminar');
       }
     }
   };
@@ -147,12 +148,6 @@ export const Inventario = () => {
         {/* Área de Contenido */}
         <div className="flex-1 overflow-y-auto p-8">
 
-        {mensajeExito && (
-          <div className="mb-6 p-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-medium flex items-center shadow-sm">
-            {mensajeExito}
-          </div>
-        )}
-
         {errorCarga && (
           <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg font-medium">
             <strong>Error de carga:</strong> {errorCarga}
@@ -161,7 +156,7 @@ export const Inventario = () => {
         )}
 
         {loading ? (
-          <div className="text-center text-slate-500 py-12">Cargando catálogo...</div>
+          <LoadingSpinner text="Cargando catálogo..." />
         ) : (
           <InsumosList 
             insumos={filteredInsumos} 
