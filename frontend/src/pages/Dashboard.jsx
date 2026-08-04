@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Package, TrendingUp, AlertCircle, ChefHat, BarChart2, ChevronRight, Info } from 'lucide-react';
+import { Package, TrendingUp, AlertCircle, ChefHat, BarChart2, ChevronRight, Info, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { insumosService } from '../services/api/insumos';
 import { recetasService } from '../services/api/recetas';
 import { ventasService } from '../services/api/ventas';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie, Legend
 } from 'recharts';
+import { supabase } from '../services/api/client';
 import { motion } from 'framer-motion';
 import { LoadingSpinner } from '../components/ui/Loading';
 
@@ -15,19 +17,37 @@ export const Dashboard = () => {
   const [stats, setStats] = useState({
     insumosCount: 0,
     alertasStock: 0,
+    alertasItems: [],
     recetasCount: 0,
     ventasHoy: 0,
-    gananciaTotal: 0
+    gananciaTotal: 0,
+    valorInventario: 0
   });
   const [topProductos, setTopProductos] = useState([]);
+  const [topIngredientes, setTopIngredientes] = useState([]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
-        // 1. Cargar Insumos
+        // 1. Cargar Insumos y Compras
         const insumos = await insumosService.getInsumos();
-        const alertas = insumos?.filter(i => i.cantidad_actual_base <= i.umbral_minimo) || [];
+        
+        const sessionRes = await supabase.auth.getSession();
+        const user = sessionRes.data?.session?.user;
+        let comprasData = null;
+        if (user) {
+          const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', user.id).single();
+          if (userData?.restaurante_id) {
+            const { data } = await supabase.from('compras').select('total').eq('restaurante_id', userData.restaurante_id);
+            comprasData = data;
+          }
+        }
+        
+        let valorInventario = 0;
+        comprasData?.forEach(c => {
+           valorInventario += (Number(c.total) || 0);
+        });
         
         // 2. Cargar Recetas Activas (con precio de venta > 0)
         const recetas = await recetasService.getRecetas();
@@ -53,15 +73,36 @@ export const Dashboard = () => {
            }
         });
 
+        // 4.5 Cargar Top Ingredientes Estrella
+        const { data: movs } = await supabase
+          .from('insumo_movimientos')
+          .select('insumo_id, ingreso_generado, insumos(nombre)')
+          .eq('tipo', 'venta');
+        
+        const rentabilidad = {};
+        if (movs) {
+          movs.forEach(m => {
+            if (!rentabilidad[m.insumo_id]) {
+              rentabilidad[m.insumo_id] = { nombre: m.insumos?.nombre || 'Desconocido', ganancia: 0 };
+            }
+            rentabilidad[m.insumo_id].ganancia += Number(m.ingreso_generado || 0);
+          });
+        }
+        const topIngs = Object.values(rentabilidad)
+          .filter(i => i.ganancia > 0)
+          .sort((a,b) => b.ganancia - a.ganancia)
+          .slice(0, 5);
+
         setStats({
           insumosCount: insumos?.length || 0,
-          alertasStock: alertas.length,
           recetasCount: recetasActivas.length,
           ventasHoy: ventasHoyData?.length || 0,
-          gananciaTotal
+          gananciaTotal,
+          valorInventario
         });
 
         setTopProductos(top5);
+        setTopIngredientes(topIngs);
       } catch (error) {
         console.error('Error cargando Dashboard:', error);
       } finally {
@@ -148,26 +189,26 @@ export const Dashboard = () => {
             </div>
           </motion.div>
 
-          {/* KPI 2 */}
+          {/* KPI 2: Valor de Inventario */}
           <motion.div variants={itemVariants}>
             <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-amber-200 hover:shadow-[0_8px_30px_rgb(245,158,11,0.1)] hover:-translate-y-1 transition-all duration-300 block group relative">
               <div className="flex justify-between items-start">
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Alertas Stock</p>
+                    <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Valor Stock</p>
                     <div className="relative flex items-center group/tooltip">
                       <Info size={14} className="text-slate-400 hover:text-amber-500 transition-colors cursor-help" />
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 text-center pointer-events-none">
-                        Insumos que se encuentran por debajo o en su nivel mínimo de stock.
+                        Dinero invertido actualmente en materia prima (stock físico).
                       </div>
                     </div>
                   </div>
-                  <h3 className={`text-4xl font-black tracking-tighter transition-colors ${stats.alertasStock > 0 ? 'text-amber-500 group-hover:text-amber-600' : 'text-slate-800 group-hover:text-amber-500'}`}>
-                    {stats.alertasStock}
+                  <h3 className="text-4xl font-black text-slate-800 tracking-tighter group-hover:text-amber-600 transition-colors truncate" title={`$${stats.valorInventario.toFixed(2)}`}>
+                    ${stats.valorInventario.toFixed(2)}
                   </h3>
                 </div>
-                <div className={`p-3.5 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm ${stats.alertasStock > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-50 text-slate-400'}`}>
-                  <AlertCircle size={24} strokeWidth={2.5} />
+                <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm ml-2 flex-shrink-0">
+                  <DollarSign size={24} strokeWidth={2.5} />
                 </div>
               </div>
             </div>
@@ -260,12 +301,12 @@ export const Dashboard = () => {
         >
           
           {/* Gráfico de Barras: Top Productos */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100">
-            <div className="flex items-center mb-8">
+          <div className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col">
+            <div className="flex items-center mb-8 shrink-0">
               <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl mr-4 shadow-sm">
                 <BarChart2 size={20} strokeWidth={2.5} />
               </div>
-              <h2 className="text-xl font-bold text-slate-800 tracking-tight">Top 5 Productos Más Vendidos</h2>
+              <h2 className="text-lg font-bold text-slate-800 tracking-tight">Top Recetas</h2>
             </div>
             
             {loading ? (
@@ -275,7 +316,7 @@ export const Dashboard = () => {
                 Aún no hay ventas registradas para generar gráficos.
               </div>
             ) : (
-              <div className="h-72 w-full">
+              <div className="h-52 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={topProductos}
@@ -309,38 +350,93 @@ export const Dashboard = () => {
             )}
           </div>
 
+          {/* Gráfico de Dona: Top Ingredientes */}
+          <div className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col">
+            <div className="flex items-center mb-4 shrink-0">
+              <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl mr-4 shadow-sm">
+                <Package size={20} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-800 tracking-tight">Insumos Estrella</h2>
+                <p className="text-xs text-slate-400 font-medium">Mayor ganancia aportada</p>
+              </div>
+            </div>
+            
+            {loading ? (
+              <div className="flex-1 flex items-center justify-center"><LoadingSpinner text="Calculando..." /></div>
+            ) : topIngredientes.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center text-slate-400 text-sm text-center">
+                Vende platillos para descubrir tus ingredientes estrella.
+              </div>
+            ) : (
+              <div className="flex-1 relative min-h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Tooltip 
+                      formatter={(value) => [`$${value.toFixed(2)}`, 'Ganancia']}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Pie
+                      data={topIngredientes}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="ganancia"
+                      nameKey="nombre"
+                      stroke="none"
+                    >
+                      {topIngredientes.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '10px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Custom Legend (Center Text) */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none mt-[-10px]">
+                   <span className="text-xl font-black text-slate-800">${topIngredientes[0]?.ganancia.toFixed(0)}</span>
+                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">Líder</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Panel Auxiliar Informativo (Bento Box) */}
-          <div className="bg-slate-900 p-8 rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col justify-between relative overflow-hidden group">
+          <div className="p-8 rounded-3xl shadow-xl border flex flex-col justify-between relative overflow-hidden group bg-slate-900 border-slate-800 text-white">
             
             {/* Elemento de diseño de fondo simple */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-full mix-blend-screen filter blur-[80px] opacity-40"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-screen filter blur-[80px] opacity-40 bg-blue-500"></div>
             
             <div className="relative z-10">
               <div className="inline-flex px-3 py-1 bg-white/10 rounded-full text-xs font-bold tracking-widest uppercase mb-4 border border-white/5 text-slate-200">
                 Estado Operativo
               </div>
-              <h2 className="text-3xl font-black tracking-tight mb-3 text-white">Todo en Orden</h2>
-              <p className="text-slate-300 text-sm leading-relaxed mb-8">
-                Insumia está registrando automáticamente las ventas, descontando los gramos de tus insumos, y vigilando tu stock. 
+              <h2 className="text-3xl font-black tracking-tight mb-3 text-white">
+                Sistemas en Orden
+              </h2>
+              <p className="text-slate-300 text-sm leading-relaxed mb-6">
+                Insumia está registrando automáticamente las ventas, descontando los gramos de tus insumos, y vigilando tu stock y mermas en tiempo real.
               </p>
               
-              <ul className="space-y-4">
-                <li className="flex items-center text-sm font-medium text-slate-200">
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full mr-4 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                  Inventario sincronizado
-                </li>
-                <li className="flex items-center text-sm font-medium text-slate-200">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full mr-4 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
-                  Costos calculados
-                </li>
-                <li className="flex items-center text-sm font-medium text-slate-200">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full mr-4 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></div>
-                  Monitor de mermas activo
-                </li>
+              <ul className="space-y-3">
+                  <li className="flex items-center text-sm font-medium text-slate-200">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full mr-4 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+                    Inventario sincronizado
+                  </li>
+                  <li className="flex items-center text-sm font-medium text-slate-200">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full mr-4 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
+                    Costos de recetas calculados
+                  </li>
+                  <li className="flex items-center text-sm font-medium text-slate-200">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full mr-4 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></div>
+                    Auditoría Kardex activa
+                  </li>
               </ul>
             </div>
             
-            <Link to="/ventas" className="relative z-10 mt-10 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 px-6 rounded-2xl transition-all duration-300 text-center flex items-center justify-center group/btn active:scale-95 shadow-md hover:shadow-lg">
+            <Link to="/ventas" className="relative z-10 mt-8 font-bold py-3.5 px-6 rounded-2xl transition-all duration-300 text-center flex items-center justify-center group/btn active:scale-95 shadow-md hover:shadow-lg text-white bg-blue-600 hover:bg-blue-500">
               <span>Ir al Punto de Venta</span>
               <ChevronRight size={18} className="ml-2 opacity-70 group-hover/btn:translate-x-1 transition-transform" />
             </Link>

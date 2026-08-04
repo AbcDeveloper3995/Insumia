@@ -6,6 +6,7 @@ import {
   DollarSign, 
   ShoppingCart,
   AlertTriangle,
+  AlertCircle,
   Star,
   Frown,
   Activity,
@@ -36,9 +37,9 @@ export const Informes = () => {
     ventasTotales: 0,
     ingresoBruto: 0,
     gananciaNeta: 0,
-    descuadreCaja: 0,
-    deudaProveedores: 0,
-    inversionReal: 0
+    gananciaNeta: 0,
+    ticketPromedio: 0,
+    rentabilidadPromedio: 0
   });
 
   useEffect(() => {
@@ -74,45 +75,18 @@ export const Informes = () => {
         // Cargar todas las ventas filtradas
         const productosData = await ventasService.getVentasReporte(startDate, dateFilter === 'historico' ? null : endDate);
         
-        // Cargar Cajas Cerradas
-        let queryCajas = supabase.from('cajas').select('*').eq('restaurante_id', restauranteId).eq('estado', 'cerrada');
-        if (startDate) queryCajas = queryCajas.gte('fecha_cierre', startDate.toISOString());
-        if (endDate && dateFilter !== 'historico') queryCajas = queryCajas.lte('fecha_cierre', endDate.toISOString());
-        const { data: cajasData } = await queryCajas;
-
-        // Cargar Compras
-        let queryCompras = supabase.from('compras').select('*').eq('restaurante_id', restauranteId);
-        if (startDate) queryCompras = queryCompras.gte('fecha', startDate.toISOString());
-        if (endDate && dateFilter !== 'historico') queryCompras = queryCompras.lte('fecha', endDate.toISOString());
-        const { data: comprasData } = await queryCompras;
+        // (Cajas y Compras fueron movidos a Caja.jsx)
 
         let ventasTotales = 0;
         let ingresoBruto = 0;
         let gananciaNeta = 0;
-        let descuadreCaja = 0;
-        let deudaProveedores = 0;
-        let inversionReal = 0;
+        let ventasUnicas = new Set();
         
         const agrupadoPorReceta = {};
         const agrupadoPorFecha = {};
         const agrupadoPorPago = { efectivo: 0, tarjeta: 0, transferencia: 0 };
         let catPlatillos = 0;
         let catSubrecetas = 0;
-
-        // Analizar Cajas
-        cajasData?.forEach(c => {
-           const finalE = Number(c.monto_final_esperado) || 0;
-           const finalR = Number(c.monto_final_real) || 0;
-           descuadreCaja += (finalR - finalE);
-        });
-
-        // Analizar Compras
-        comprasData?.forEach(c => {
-           inversionReal += Number(c.total) || 0;
-           if (c.estado === 'pendiente') {
-              deudaProveedores += Number(c.total) || 0;
-           }
-        });
 
         productosData.forEach(item => {
            const receta = recetasActivas.find(r => r.id === item.receta_id);
@@ -154,10 +128,8 @@ export const Informes = () => {
              }
 
              // Categorías (Platillo vs Subreceta en venta directa)
-             if (receta.es_subreceta) {
-               catSubrecetas += ingresoTotalItem;
-             } else {
-               catPlatillos += ingresoTotalItem;
+             if (item.ventas && item.ventas.id) {
+               ventasUnicas.add(item.ventas.id);
              }
 
              // Agrupar Tendencias
@@ -226,13 +198,16 @@ export const Informes = () => {
         setCategoryData(finalCatData);
         setMetodosPagoData(metodosPagoFinal);
 
+        const numeroVentas = ventasUnicas.size;
+        const ticketPromedio = numeroVentas > 0 ? ingresoBruto / numeroVentas : 0;
+        const rentabilidadPromedio = ingresoBruto > 0 ? (gananciaNeta / ingresoBruto) * 100 : 0;
+
         setTotals({
           ventasTotales,
           ingresoBruto,
           gananciaNeta,
-          descuadreCaja,
-          deudaProveedores,
-          inversionReal
+          ticketPromedio,
+          rentabilidadPromedio
         });
 
       } catch (error) {
@@ -315,90 +290,62 @@ export const Informes = () => {
         )}
         
         {/* KPIs Resumen Principal */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
-              <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Platillos Vendidos</p>
-              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-2xl shadow-sm">
-                <ShoppingCart size={20} strokeWidth={2.5} />
-              </div>
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Platillos Vendidos</p>
             </div>
-            <h3 className="text-4xl font-black text-slate-800 tracking-tighter">
-              {totals.ventasTotales}
-            </h3>
+            <div className="flex items-end justify-between">
+              <h3 className="text-3xl font-black text-slate-800 tracking-tighter">{totals.ventasTotales}</h3>
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><ShoppingCart size={18} strokeWidth={2.5} /></div>
+            </div>
           </div>
 
-          <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+          <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
-              <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Ingreso Bruto</p>
-              <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl shadow-sm">
-                <DollarSign size={20} strokeWidth={2.5} />
-              </div>
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Ticket Promedio</p>
             </div>
-            <h3 className="text-4xl font-black text-slate-800 tracking-tighter">
-              ${totals.ingresoBruto.toFixed(2)}
-            </h3>
+            <div className="flex items-end justify-between">
+              <h3 className="text-3xl font-black text-slate-800 tracking-tighter truncate" title={`$${totals.ticketPromedio.toFixed(2)}`}>${totals.ticketPromedio.toFixed(2)}</h3>
+              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><Wallet size={18} strokeWidth={2.5} /></div>
+            </div>
           </div>
 
-          <div className="bg-gradient-to-br from-sky-500 to-blue-600 p-7 rounded-3xl shadow-[0_8px_30px_rgb(14,165,233,0.2)] border border-sky-400 text-white flex flex-col justify-between h-full relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full mix-blend-overlay filter blur-[60px] opacity-20"></div>
+          <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Ingreso Bruto</p>
+            </div>
+            <div className="flex items-end justify-between">
+              <h3 className="text-3xl font-black text-emerald-600 tracking-tighter truncate" title={`$${totals.ingresoBruto.toFixed(2)}`}>${totals.ingresoBruto.toFixed(2)}</h3>
+              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><DollarSign size={18} strokeWidth={2.5} /></div>
+            </div>
+          </div>
+
+          <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Ganancia Neta</p>
+            </div>
+            <div className="flex items-end justify-between">
+              <h3 className="text-3xl font-black text-sky-600 tracking-tighter truncate" title={`$${totals.gananciaNeta.toFixed(2)}`}>${totals.gananciaNeta.toFixed(2)}</h3>
+              <div className="p-2 bg-sky-50 text-sky-600 rounded-xl"><TrendingUp size={18} strokeWidth={2.5} /></div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-3xl shadow-lg border border-slate-700 text-white flex flex-col justify-between h-full relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full mix-blend-overlay filter blur-[40px] opacity-10"></div>
             <div className="flex justify-between items-start mb-2 relative z-10">
-               <p className="text-xs font-bold text-sky-100 tracking-widest uppercase">Ganancia Neta Teórica</p>
-               <div className="p-2.5 bg-white/20 text-white rounded-2xl shadow-sm">
-                 <TrendingUp size={20} strokeWidth={2.5} />
+               <p className="text-[10px] font-bold text-slate-300 tracking-widest uppercase">Rentabilidad</p>
+               <div className="relative group/tooltip">
+                 <AlertCircle size={14} className="text-slate-400 cursor-help" />
+                 <div className="absolute top-full right-0 mt-2 w-48 p-2 bg-white text-slate-800 text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center">
+                   Margen de ganancia promedio del periodo.
+                 </div>
                </div>
             </div>
-            <h3 className="text-4xl font-black text-white tracking-tighter relative z-10 truncate" title={`$${totals.gananciaNeta.toFixed(2)}`}>
-               ${totals.gananciaNeta.toFixed(2)}
-            </h3>
-          </div>
-        </div>
-
-        {/* KPIs Financieros (Caja y Compras) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className={`p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border flex flex-col justify-between h-full relative overflow-hidden ${totals.descuadreCaja < 0 ? 'bg-rose-50 border-rose-200' : 'bg-white border-slate-100'}`}>
-            <div className="flex justify-between items-start mb-2 relative z-10">
-               <p className={`text-xs font-bold tracking-widest uppercase ${totals.descuadreCaja < 0 ? 'text-rose-500' : 'text-slate-400'}`}>Descuadres de Caja</p>
-               <div className={`p-2.5 rounded-2xl shadow-sm ${totals.descuadreCaja < 0 ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-500'}`}>
-                 <Wallet size={20} strokeWidth={2.5} />
-               </div>
+            <div className="flex items-end justify-between relative z-10">
+              <h3 className="text-3xl font-black text-white tracking-tighter">{totals.rentabilidadPromedio.toFixed(1)}%</h3>
+              <div className="p-2 bg-white/10 text-white rounded-xl"><Activity size={18} strokeWidth={2.5} /></div>
             </div>
-            <h3 className={`text-4xl font-black tracking-tighter relative z-10 truncate ${totals.descuadreCaja < 0 ? 'text-rose-600' : 'text-slate-800'}`}>
-               ${totals.descuadreCaja.toFixed(2)}
-            </h3>
-            <p className={`text-xs mt-2 font-medium ${totals.descuadreCaja < 0 ? 'text-rose-500' : 'text-slate-400'}`}>
-               {totals.descuadreCaja < 0 ? '¡Alerta! Faltante de dinero en cortes.' : 'Cortes de caja exactos.'}
-            </p>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-2">
-               <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Inversión en Compras</p>
-               <div className="p-2.5 bg-amber-50 text-amber-600 rounded-2xl shadow-sm">
-                 <ShoppingCart size={20} strokeWidth={2.5} />
-               </div>
-            </div>
-            <h3 className="text-4xl font-black text-slate-800 tracking-tighter truncate">
-               ${totals.inversionReal.toFixed(2)}
-            </h3>
-            <p className="text-xs mt-2 font-medium text-slate-400">
-               Gastos operativos (Insumos)
-            </p>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-2">
-               <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Cuentas por Pagar</p>
-               <div className="p-2.5 bg-rose-50 text-rose-600 rounded-2xl shadow-sm">
-                 <Building size={20} strokeWidth={2.5} />
-               </div>
-            </div>
-            <h3 className="text-4xl font-black text-rose-600 tracking-tighter truncate">
-               ${totals.deudaProveedores.toFixed(2)}
-            </h3>
-            <p className="text-xs mt-2 font-medium text-slate-400">
-               Deuda acumulada a proveedores
-            </p>
           </div>
         </div>
 
@@ -412,7 +359,16 @@ export const Informes = () => {
                 <Activity size={18} strokeWidth={2.5} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-800 tracking-tight">Tendencia de Ventas</h2>
+                <div className="flex items-center gap-2">
+                   <h2 className="text-lg font-bold text-slate-800 tracking-tight">Tendencia de Ventas</h2>
+                   <div className="relative flex items-center group/tooltip">
+                     <AlertCircle size={14} className="text-slate-400 hover:text-indigo-500 transition-colors cursor-help" />
+                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 text-white text-xs rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 text-left pointer-events-none shadow-xl border border-slate-700">
+                       <p className="mb-1"><span className="font-bold text-indigo-300">Ingreso Bruto:</span> Todo el dinero que entró a tu caja por la venta del platillo (Precio de venta).</p>
+                       <p><span className="font-bold text-sky-300">Ganancia Neta:</span> El dinero libre que te queda *después* de restarle lo que te costó comprar los insumos para prepararlo.</p>
+                     </div>
+                   </div>
+                </div>
                 <p className="text-xs font-semibold text-slate-400">Evolución de Ingresos y Ganancias</p>
               </div>
             </div>
@@ -460,9 +416,14 @@ export const Informes = () => {
                 </div>
                 <h2 className="text-lg font-bold text-slate-800 tracking-tight">Métodos de Pago</h2>
               </div>
-              <div className="flex-1 min-h-[180px] w-full flex items-center justify-center">
+              <div className="flex-1 min-h-[180px] w-full flex flex-col items-center justify-center text-center px-4">
                 {metodosPagoData.length === 0 ? (
-                  <div className="text-slate-400 text-sm">No hay datos</div>
+                  <>
+                    <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center mb-2">
+                       <CreditCard size={20} className="text-slate-300" />
+                    </div>
+                    <p className="text-slate-400 text-xs font-medium">Aquí verás cuánto de tu dinero entró por Efectivo, Tarjeta o Transferencia una vez que registres ventas.</p>
+                  </>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>

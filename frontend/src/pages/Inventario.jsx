@@ -8,6 +8,7 @@ import { Modal } from '../components/common/Modal';
 import { InsumoForm } from '../components/inventario/InsumoForm';
 import { InsumosList } from '../components/inventario/InsumosList';
 import { InsumoCompraInicial } from '../components/inventario/InsumoCompraInicial';
+import { KardexModal } from '../components/inventario/KardexModal';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
 import { supabase } from '../services/api/client';
@@ -25,6 +26,7 @@ export const Inventario = () => {
   const [modalStep, setModalStep] = useState(1); // 1 = form insumo, 2 = compra inicial
   const [editingInsumo, setEditingInsumo] = useState(null);
   const [createdInsumo, setCreatedInsumo] = useState(null);
+  const [selectedKardexInsumo, setSelectedKardexInsumo] = useState(null);
   
   const [errorCarga, setErrorCarga] = useState(null);
 
@@ -253,6 +255,7 @@ export const Inventario = () => {
                 onEdit={handleOpenModal} 
                 onDelete={handleDelete} 
                 onInitialPurchase={handleOpenCompraInicial}
+                onViewKardex={setSelectedKardexInsumo}
               />
             )}
         </div>
@@ -279,6 +282,13 @@ export const Inventario = () => {
             />
         )}
       </Modal>
+
+      {selectedKardexInsumo && (
+        <KardexModal 
+          insumo={selectedKardexInsumo} 
+          onClose={() => setSelectedKardexInsumo(null)} 
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import { AlertTriangle, Edit, Trash2, Package, Info, Lightbulb, ChefHat, TrendingDown, ShoppingCart } from 'lucide-react';
 
-export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase }) => {
+export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase, onViewKardex }) => {
   if (!insumos || insumos.length === 0) {
     return (
       <div className="space-y-6">
@@ -80,6 +80,19 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase }) =>
           </div>
         </div>
 
+        {/* Tip (Cálculos) */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-start space-x-4 mt-6">
+          <div className="p-2 bg-blue-50 text-blue-500 rounded-lg shrink-0">
+            <Info size={24} />
+          </div>
+          <div>
+            <h4 className="text-slate-800 font-bold">¿Cómo calcula Insumia tus costos?</h4>
+            <p className="text-slate-500 text-sm mt-1">
+              El costo por unidad base (ej. 1 gramo) se calcula tomando el precio de compra y dividiéndolo entre tu conversión y rendimiento. ¡Da clic en el botón <strong>Kardex</strong> de cualquier insumo para auditar dónde se gastó y cuánta ganancia generó!
+            </p>
+          </div>
+        </div>
+
       </div>
     );
   }
@@ -110,17 +123,17 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase }) =>
             {isBajoUmbral && (
               <div className="bg-amber-50 border-b border-amber-100 px-3 py-1.5 flex items-center gap-1.5">
                 <AlertTriangle size={14} className="text-amber-600" />
-                <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">Stock Bajo (Quedan {stockActual} {insumo.unidad_base})</span>
+                <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">Stock Bajo</span>
               </div>
             )}
             
             {/* Cabecera Tarjeta */}
-            <div className={`p-5 border-b ${needsPurchase ? 'border-rose-100' : (isBajoUmbral ? 'border-amber-100' : 'border-slate-100')} flex justify-between items-start`}>
+            <div className={`p-4 border-b ${needsPurchase ? 'border-rose-100' : (isBajoUmbral ? 'border-amber-100' : 'border-slate-100')} flex justify-between items-start`}>
               <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg 
+                <div className={`p-1.5 rounded-lg 
                   ${needsPurchase ? 'bg-rose-100 text-rose-600' : (isBajoUmbral ? 'bg-amber-100 text-amber-600' : 'bg-blue-50 text-blue-600')}`}
                 >
-                  <Package size={24} />
+                  <Package size={20} />
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-800 line-clamp-1" title={insumo.nombre}>
@@ -136,24 +149,24 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase }) =>
             </div>
 
             {/* Contenido / Stock Principal */}
-            <div className="p-5 flex-1 relative">
-              <p className="text-sm text-slate-500 mb-1">Stock Actual</p>
+            <div className="p-4 flex-1 relative">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Stock Actual</p>
               <div className="flex items-baseline">
-                <span className={`text-3xl font-bold 
+                <span className={`text-2xl font-black 
                   ${needsPurchase ? 'text-slate-300' : (isBajoUmbral ? 'text-amber-600' : 'text-emerald-600')}
                 `}>
                   {insumo.cantidad_actual_base}
                 </span>
-                <span className="ml-2 text-slate-500 font-medium">{insumo.unidad_base}</span>
+                <span className="ml-1.5 text-slate-500 font-semibold text-sm">{insumo.unidad_base}</span>
               </div>
               
-              <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="mt-3 grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-slate-400">Rendimiento</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-400">Rendimiento</p>
                   <p className="text-sm font-medium text-slate-700">{insumo.porcentaje_rendimiento}%</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400">Costo ({insumo.unidad_compra})</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-400">Costo ({insumo.unidad_compra})</p>
                   <p className={`text-sm font-medium ${needsPurchase ? 'text-rose-500' : 'text-slate-700'}`}>
                     ${Number(insumo.costo_unidad_compra).toFixed(2)}
                   </p>
@@ -169,41 +182,49 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase }) =>
             </div>
 
             {/* Botones de Acción */}
-            <div className={`px-5 py-3 border-t flex items-center justify-between
+            <div className={`px-4 py-2 border-t flex items-center justify-between
               ${needsPurchase ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}
             `}>
               {needsPurchase ? (
                 <>
                   <button 
                     onClick={() => onDelete(insumo.id)}
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
                     title="Eliminar Insumo"
                   >
                     <Trash2 size={16} />
                   </button>
                   <button 
                     onClick={() => onInitialPurchase && onInitialPurchase(insumo)}
-                    className="flex-1 ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm"
+                    className="flex-1 ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                   >
-                    <ShoppingCart size={16} />
+                    <ShoppingCart size={14} />
                     Registrar Compra
                   </button>
                 </>
               ) : (
-                <div className="w-full flex justify-end space-x-2">
+                <div className="w-full flex justify-end space-x-1">
+                  <button 
+                    onClick={() => onViewKardex && onViewKardex(insumo)}
+                    className="flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer mr-2 shadow-sm"
+                    title="Ver Kardex / Historial"
+                  >
+                    <Info size={14} className="text-slate-400" />
+                    Kardex
+                  </button>
                   <button 
                     onClick={() => onEdit(insumo)}
-                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                     title="Editar Insumo"
                   >
-                    <Edit size={18} />
+                    <Edit size={16} />
                   </button>
                   <button 
                     onClick={() => onDelete(insumo.id)}
-                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                     title="Eliminar Insumo"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               )}

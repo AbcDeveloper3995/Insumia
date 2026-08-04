@@ -54,5 +54,19 @@ export const insumosService = {
       
     if (error) throw error;
     return true;
+  },
+
+  /**
+   * Obtiene el Kardex (historial de movimientos) de un insumo
+   */
+  async getKardex(insumoId) {
+    const { data, error } = await supabase
+      .from('insumo_movimientos')
+      .select('*')
+      .eq('insumo_id', insumoId)
+      .order('created_at', { ascending: false });
+      
+    if (error) throw error;
+    return data;
   }
 };

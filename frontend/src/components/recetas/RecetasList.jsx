@@ -76,7 +76,7 @@ export const RecetasList = ({ recetas, onEdit, onDelete }) => {
           <div>
             <h4 className="text-slate-800 font-bold">La Regla de Oro del Restaurante (Food Cost)</h4>
             <p className="text-slate-500 text-sm mt-1">
-              Como estándar en la industria, el costo de tus ingredientes <strong>nunca debe superar el 33%</strong> del precio de venta (Margen mayor a 65%). Si te pasas de ese límite, verás una alerta naranja en tus tarjetas de receta, avisándote que podrías estar perdiendo dinero operativo.
+              Como estándar en la industria, el costo de tus ingredientes <strong>nunca debe superar el 50%</strong> del precio de venta (Margen mayor a 50%). Si te pasas de ese límite, verás una alerta roja en tus tarjetas de receta, avisándote que podrías estar perdiendo dinero operativo.
             </p>
           </div>
         </div>
@@ -94,7 +94,7 @@ export const RecetasList = ({ recetas, onEdit, onDelete }) => {
         <div>
           <h4 className="text-sm font-bold text-slate-700">Entendiendo el Costo FC (Food Cost)</h4>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-            El <strong>Costo FC</strong> es la suma del costo real de todos los ingredientes que componen un platillo. Como regla de oro, este costo <strong>no debe superar el 35%</strong> del precio de venta para asegurar que tu restaurante sea rentable. Si el margen cae por debajo del 65%, la tarjeta te alertará.
+            El <strong>Costo FC</strong> es la suma del costo real de todos los ingredientes que componen un platillo. Como regla de oro, este costo <strong>no debe superar el 50%</strong> del precio de venta para asegurar que tu restaurante sea rentable. Si el margen cae por debajo del 50%, la tarjeta te alertará en rojo.
           </p>
         </div>
       </div>
@@ -107,8 +107,8 @@ export const RecetasList = ({ recetas, onEdit, onDelete }) => {
         const ganancia = precio - costo;
         const margen = precio > 0 ? (ganancia / precio) * 100 : 0;
         
-        // Regla general de restaurantes: Food Cost debe ser maximo 33% (Margen 67%+)
-        const alertaMargen = precio > 0 && margen < 65;
+        // Regla general de restaurantes: Food Cost debe ser maximo 50% (Margen 50%+)
+        const alertaMargen = precio > 0 && margen < 50;
 
         return (
           <div 

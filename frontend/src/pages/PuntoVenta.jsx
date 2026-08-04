@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Receipt, Info, PlusCircle, CreditCard, ChevronRight, Image as ImageIcon, Wallet, X, DollarSign } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Receipt, Info, PlusCircle, CreditCard, ChevronRight, Image as ImageIcon, Wallet, X, DollarSign, Utensils } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { recetasService } from '../services/api/recetas';
 import { ventasService } from '../services/api/ventas';
@@ -204,18 +204,35 @@ export const PuntoVenta = () => {
           ) : (
             <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12">
               {platillosFiltrados.map(platillo => (
-                <motion.button variants={itemVariants} whileTap={{ scale: 0.95 }} key={platillo.id} onClick={() => agregarAlCarrito(platillo)} className="group bg-white rounded-3xl p-3 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:shadow-lg hover:border-blue-200 transition-all duration-300 text-left flex flex-col justify-between aspect-[4/5] cursor-pointer overflow-hidden">
-                  <div className="w-full h-3/5 bg-slate-100/80 rounded-2xl mb-4 flex items-center justify-center overflow-hidden relative">
-                     <ImageIcon size={32} className="text-slate-300 opacity-50" />
-                     <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/10 transition-colors duration-300 flex items-center justify-center">
-                        <Plus className="text-blue-600 opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300" size={32} strokeWidth={3} />
-                     </div>
+                <motion.button 
+                  variants={itemVariants} 
+                  whileTap={{ scale: 0.95 }} 
+                  key={platillo.id} 
+                  onClick={() => agregarAlCarrito(platillo)} 
+                  className="group bg-white rounded-3xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 text-left flex flex-col justify-between cursor-pointer relative overflow-hidden"
+                >
+                  <div className="absolute -right-6 -top-6 text-slate-50/50 group-hover:text-blue-50/50 transition-colors duration-500 z-0 transform group-hover:scale-110">
+                     <Utensils size={120} strokeWidth={1} />
                   </div>
-                  <div className="flex-1 flex flex-col justify-between px-2 pb-2">
-                    <h3 className="font-bold text-slate-800 text-lg leading-tight line-clamp-2 tracking-tight group-hover:text-blue-600 transition-colors">{platillo.nombre}</h3>
-                    <div className="mt-auto pt-2 flex items-end justify-between w-full">
-                      <span className="text-2xl font-black text-slate-900 tracking-tighter">${Number(platillo.precio_venta).toFixed(2)}</span>
-                      <div className="h-10 w-10 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300 shadow-sm"><Plus size={20} strokeWidth={2.5} /></div>
+                  
+                  <div className="relative z-10 w-full mb-6 flex justify-between items-start">
+                     <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shadow-sm">
+                       <Utensils size={28} strokeWidth={2} />
+                     </div>
+                     <span className="bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg border border-slate-100">{platillo.categoria || 'Menú'}</span>
+                  </div>
+                  
+                  <div className="relative z-10 w-full">
+                    <h3 className="font-bold text-slate-800 text-lg leading-tight line-clamp-2 tracking-tight group-hover:text-blue-600 transition-colors mb-1">{platillo.nombre}</h3>
+                    <p className="text-xs font-semibold text-slate-400 mb-4 line-clamp-1">Listo para preparar</p>
+                    <div className="flex items-end justify-between w-full mt-4 border-t border-slate-50 pt-4">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Precio</p>
+                        <span className="text-2xl font-black text-slate-900 tracking-tighter">${Number(platillo.precio_venta).toFixed(2)}</span>
+                      </div>
+                      <div className="h-12 w-12 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-md transform group-hover:scale-105">
+                        <Plus size={24} strokeWidth={2.5} />
+                      </div>
                     </div>
                   </div>
                 </motion.button>

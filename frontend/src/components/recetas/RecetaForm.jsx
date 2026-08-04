@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { Plus, Trash2, Calculator } from 'lucide-react';
+import { Plus, Trash2, Calculator, Info } from 'lucide-react';
 import { insumosService } from '../../services/api/insumos';
 
 export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }) => {
@@ -226,8 +226,16 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
           </div>
 
           <div>
-            <p className="text-slate-400 text-xs mb-1">Margen</p>
-            <p className={`text-2xl font-bold ${margen >= 65 ? 'text-emerald-400' : 'text-amber-400'}`}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-slate-400 text-xs">Margen</p>
+              <div className="relative flex items-center group/tooltip">
+                <Info size={12} className="text-slate-500 hover:text-slate-300 transition-colors cursor-help" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-white text-slate-800 text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 text-center pointer-events-none shadow-xl border border-slate-200">
+                  Porcentaje del precio de venta que se convierte en tu ganancia bruta (después de pagar los ingredientes). Ideal &gt; 50%.
+                </div>
+              </div>
+            </div>
+            <p className={`text-2xl font-bold ${margen >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
               {margen.toFixed(1)}%
             </p>
           </div>

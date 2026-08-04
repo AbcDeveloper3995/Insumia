@@ -14,8 +14,6 @@ import { CompraForm } from '../components/compras/CompraForm';
 export const Compras = () => {
   const { session } = useAuth();
   
-  const [activeTab, setActiveTab] = useState('historial'); // 'historial', 'proveedores'
-  
   // Data
   const [compras, setCompras] = useState([]);
   const [proveedores, setProveedores] = useState([]);
@@ -24,6 +22,7 @@ export const Compras = () => {
   const [loading, setLoading] = useState(true);
 
   // Registro de Proveedor
+  const [isAddingProveedor, setIsAddingProveedor] = useState(false);
   const [nuevoProveedor, setNuevoProveedor] = useState('');
   const [editingProveedor, setEditingProveedor] = useState(null);
   const [editNombre, setEditNombre] = useState('');
@@ -78,6 +77,7 @@ export const Compras = () => {
 
           await comprasService.createProveedor(restauranteId, { nombre: nuevoProveedor.trim() });
           setNuevoProveedor('');
+          setIsAddingProveedor(false);
           const provs = await comprasService.getProveedores(restauranteId);
           setProveedores(provs);
           toast.success('Proveedor guardado');
@@ -177,10 +177,6 @@ export const Compras = () => {
                 <p className="text-slate-500 mt-1 text-sm">Gestiona el reabastecimiento de tu inventario y cuentas por pagar.</p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex bg-slate-100 p-1 rounded-xl shadow-inner">
-                    <button onClick={() => setActiveTab('historial')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${activeTab === 'historial' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Historial</button>
-                    <button onClick={() => setActiveTab('proveedores')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${activeTab === 'proveedores' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Proveedores</button>
-                </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
                     className="flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
@@ -192,9 +188,10 @@ export const Compras = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-8">
-            {/* PESTAÑA HISTORIAL Y CUENTAS POR PAGAR */}
-            {activeTab === 'historial' && (
-                <div className="space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                
+                {/* COLUMNA 1: HISTORIAL DE COMPRAS */}
+                <div className="xl:col-span-2 space-y-6">
                     {/* Alerta de cuentas por pagar */}
                     {compras.filter(c => c.estado === 'pendiente').length > 0 && (
                         <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl flex items-start gap-3">
@@ -274,27 +271,29 @@ export const Compras = () => {
                         </div>
                     )}
                 </div>
-            )}
 
-            {/* PESTAÑA PROVEEDORES */}
-            {activeTab === 'proveedores' && (
-                <div className="max-w-2xl mx-auto">
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row items-end gap-4">
-                        <div className="flex-1 w-full">
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Nombre del Nuevo Proveedor</label>
-                            <input type="text" value={nuevoProveedor} onChange={e => setNuevoProveedor(e.target.value)} placeholder="Ej. Frutería Central" className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                        </div>
-                        <button onClick={handleAddProveedor} disabled={!nuevoProveedor.trim()} className={`font-bold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 w-full md:w-auto ${!nuevoProveedor.trim() ? 'bg-blue-300 text-blue-50 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer shadow active:scale-95'}`}>
-                            <Plus size={18} /> Agregar
-                        </button>
-                    </div>
-
+                {/* COLUMNA 2: DIRECTORIO DE PROVEEDORES */}
+                <div className="xl:col-span-1">
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="p-5 border-b border-slate-100 font-bold text-slate-700 flex items-center gap-2 bg-slate-50/50">
-                            <Building size={18} className="text-slate-400" /> Directorio de Proveedores
+                        <div className="p-5 border-b border-slate-100 font-bold text-slate-700 flex items-center justify-between bg-slate-50/50">
+                            <div className="flex items-center gap-2">
+                                <Building size={18} className="text-slate-400" /> Directorio de Proveedores
+                            </div>
+                            <button onClick={() => setIsAddingProveedor(true)} className="flex items-center gap-1 text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors shadow-sm cursor-pointer active:scale-95">
+                                <Plus size={16} /> Agregar
+                            </button>
                         </div>
                         <ul className="divide-y divide-slate-100">
-                            {proveedores.length === 0 ? (
+                            {isAddingProveedor && (
+                                <li className="p-4 bg-blue-50/50 flex items-center justify-between">
+                                    <div className="flex-1 flex gap-2 mr-4">
+                                        <input type="text" value={nuevoProveedor} onChange={e => setNuevoProveedor(e.target.value)} placeholder="Nombre del proveedor..." className="flex-1 bg-white border border-blue-200 px-3 py-1.5 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm outline-none shadow-inner" autoFocus onKeyDown={(e) => { if(e.key === 'Enter') handleAddProveedor(e); if(e.key === 'Escape') {setIsAddingProveedor(false); setNuevoProveedor('');} }} />
+                                        <button onClick={handleAddProveedor} disabled={!nuevoProveedor.trim()} className={`p-1.5 rounded-lg transition-colors ${!nuevoProveedor.trim() ? 'text-blue-300 bg-blue-100 cursor-not-allowed' : 'text-emerald-600 bg-emerald-100 hover:bg-emerald-200 cursor-pointer shadow-sm'}`}><Save size={16} /></button>
+                                        <button onClick={() => { setIsAddingProveedor(false); setNuevoProveedor(''); }} className="p-1.5 text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200 cursor-pointer shadow-sm"><X size={16} /></button>
+                                    </div>
+                                </li>
+                            )}
+                            {proveedores.length === 0 && !isAddingProveedor ? (
                                 <li className="p-8 text-center text-slate-400 text-sm">No tienes proveedores registrados aún.</li>
                             ) : (
                                 proveedores.map(p => (
@@ -320,7 +319,7 @@ export const Compras = () => {
                         </ul>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
       </div>
 

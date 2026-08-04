@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/auth/authService';
+import { NotificationBell } from './NotificationBell';
 
 export const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -80,17 +81,29 @@ export const Sidebar = () => {
 
       {/* Footer / User Profile */}
       <div className="border-t border-slate-100/50 p-4 bg-slate-50/30">
-        <div className="flex items-center space-x-3 mb-4 overflow-hidden px-1">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-700 font-bold flex-shrink-0 shadow-inner">
-            {session?.user?.email?.charAt(0).toUpperCase() || 'U'}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3 overflow-hidden px-1">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-700 font-bold flex-shrink-0 shadow-inner">
+              {session?.user?.email?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div className={`transition-all duration-300 ${!isExpanded ? 'opacity-0 w-0 hidden' : 'opacity-100'}`}>
+              <p className="text-sm font-bold text-slate-800 truncate tracking-tight">Administrador</p>
+              <p className="text-xs text-slate-400 truncate font-medium" title={session?.user?.email}>
+                {session?.user?.email}
+              </p>
+            </div>
           </div>
-          <div className={`transition-all duration-300 ${!isExpanded ? 'opacity-0 w-0 hidden' : 'opacity-100'}`}>
-            <p className="text-sm font-bold text-slate-800 truncate tracking-tight">Administrador</p>
-            <p className="text-xs text-slate-400 truncate font-medium" title={session?.user?.email}>
-              {session?.user?.email}
-            </p>
+          <div className={`transition-all duration-300 ${!isExpanded ? 'hidden' : 'block'}`}>
+            <NotificationBell isSidebarExpanded={isExpanded} />
           </div>
         </div>
+        
+        {/* En vista contraída, mostrar la campana sola arriba del botón salir */}
+        {!isExpanded && (
+           <div className="mb-4 flex justify-center">
+             <NotificationBell isSidebarExpanded={isExpanded} />
+           </div>
+        )}
         <button
           onClick={handleLogout}
           className={`w-full flex items-center px-3 py-2.5 text-slate-400 font-medium hover:bg-red-50 hover:text-red-600 rounded-xl transition-all cursor-pointer active:scale-95 ${!isExpanded && 'justify-center'}`}

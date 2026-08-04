@@ -83,7 +83,9 @@ export const ventasService = {
           es_subreceta
         ),
         ventas!inner (
-          created_at
+          id,
+          created_at,
+          metodo_pago
         )
       `);
 
