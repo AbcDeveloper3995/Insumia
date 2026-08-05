@@ -2,29 +2,38 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { recetasService } from '../services/api/recetas';
+import { insumosService } from '../services/api/insumos';
 import { RecetasList } from '../components/recetas/RecetasList';
 import { Modal } from '../components/common/Modal';
 import { RecetaForm } from '../components/recetas/RecetaForm';
+import { RecetaResumenModal } from '../components/recetas/RecetaResumenModal';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
 
 export const Recetas = () => {
   const { session } = useAuth();
   const [recetas, setRecetas] = useState([]);
+  const [insumos, setInsumos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReceta, setEditingReceta] = useState(null);
   
   // Estado para modal de confirmación de eliminación
+  // Estado para modal de confirmación de eliminación
   const [recetaToDelete, setRecetaToDelete] = useState(null);
+  const [selectedResumenReceta, setSelectedResumenReceta] = useState(null);
 
 
   const loadRecetas = async () => {
     try {
       setLoading(true);
-      const data = await recetasService.getRecetas();
-      setRecetas(data || []);
+      const [dataRecetas, dataInsumos] = await Promise.all([
+        recetasService.getRecetas(),
+        insumosService.getInsumos()
+      ]);
+      setRecetas(dataRecetas || []);
+      setInsumos(dataInsumos || []);
     } catch (error) {
       console.error('Error cargando recetas:', error);
     } finally {
@@ -56,6 +65,16 @@ export const Recetas = () => {
   const handleCloseModal = () => {
     setEditingReceta(null);
     setIsModalOpen(false);
+  };
+
+  const handleOpenResumen = async (receta) => {
+    try {
+      const fullReceta = await recetasService.getRecetaConIngredientes(receta.id);
+      setSelectedResumenReceta(fullReceta);
+    } catch (error) {
+      console.error('Error cargando detalles:', error);
+      toast.error('No se pudieron cargar los detalles para el resumen.');
+    }
   };
 
   const handleSubmit = async (formData) => {
@@ -161,6 +180,7 @@ export const Recetas = () => {
             recetas={filteredRecetas} 
             onEdit={handleOpenModal}
             onDelete={handleDeleteRequest} 
+            onViewResumen={handleOpenResumen}
           />
         )}
         </div>
@@ -225,6 +245,14 @@ export const Recetas = () => {
           </div>
         )}
       </Modal>
+
+      {selectedResumenReceta && (
+        <RecetaResumenModal 
+          receta={selectedResumenReceta}
+          insumos={insumos}
+          onClose={() => setSelectedResumenReceta(null)}
+        />
+      )}
     </div>
   );
 };

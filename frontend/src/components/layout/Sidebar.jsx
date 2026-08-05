@@ -31,10 +31,10 @@ export const Sidebar = () => {
   const navItems = [
     { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { to: '/caja', icon: <Wallet size={20} />, label: 'Caja' },
-    { to: '/ventas', icon: <ShoppingCart size={20} />, label: 'Punto de Venta' },
     { to: '/inventario', icon: <Package size={20} />, label: 'Insumos' },
-    { to: '/recetas', icon: <ChefHat size={20} />, label: 'Recetas' },
     { to: '/compras', icon: <Truck size={20} />, label: 'Compras' },
+    { to: '/recetas', icon: <ChefHat size={20} />, label: 'Recetas' },
+    { to: '/ventas', icon: <ShoppingCart size={20} />, label: 'Punto de Venta' },
     { to: '/informes', icon: <BarChart3 size={20} />, label: 'Informes' },
   ];
 

@@ -13,7 +13,9 @@ import {
   PieChart as PieChartIcon,
   CreditCard,
   Building,
-  Wallet
+  Wallet,
+  Crown,
+  PackageOpen
 } from 'lucide-react';
 import { LoadingSpinner } from '../components/ui/Loading';
 import { ventasService } from '../services/api/ventas';
@@ -37,9 +39,9 @@ export const Informes = () => {
     ventasTotales: 0,
     ingresoBruto: 0,
     gananciaNeta: 0,
-    gananciaNeta: 0,
-    ticketPromedio: 0,
-    rentabilidadPromedio: 0
+    rentabilidadPromedio: 0,
+    topInsumoGanancia: null,
+    topInsumoUso: null
   });
 
   useEffect(() => {
@@ -85,6 +87,7 @@ export const Informes = () => {
         const agrupadoPorReceta = {};
         const agrupadoPorFecha = {};
         const agrupadoPorPago = { efectivo: 0, tarjeta: 0, transferencia: 0 };
+        const agrupadoPorInsumo = {};
         let catPlatillos = 0;
         let catSubrecetas = 0;
 
@@ -145,8 +148,46 @@ export const Informes = () => {
                agrupadoPorFecha[fechaStr].ventas += ingresoTotalItem;
                agrupadoPorFecha[fechaStr].ganancia += gananciaTotalItem;
              }
+
+             // Agrupar por Insumo
+             if (receta.ingredientes && receta.ingredientes.length > 0 && precioVenta > 0) {
+                 receta.ingredientes.forEach(ing => {
+                     if (ing.insumo && ing.insumo.id) {
+                         const costoBase = Number(ing.insumo.costo_unidad_compra) / Number(ing.insumo.factor_conversion);
+                         const costoRealIngrediente = (costoBase / (Number(ing.insumo.porcentaje_rendimiento) / 100)) * Number(ing.cantidad);
+                         const proporcionCosto = costoUnitario > 0 ? (costoRealIngrediente / costoUnitario) : 0;
+                         
+                         const gananciaAportada = gananciaTotalItem * proporcionCosto;
+                         const cantidadUsada = Number(ing.cantidad) * item.cantidad;
+
+                         if (!agrupadoPorInsumo[ing.insumo.id]) {
+                             agrupadoPorInsumo[ing.insumo.id] = {
+                                 id: ing.insumo.id,
+                                 nombre: ing.insumo.nombre,
+                                 unidad_base: ing.insumo.unidad_base,
+                                 gananciaAportada: 0,
+                                 cantidadUsada: 0,
+                                 vecesVendido: 0
+                             };
+                         }
+                         agrupadoPorInsumo[ing.insumo.id].gananciaAportada += gananciaAportada;
+                         agrupadoPorInsumo[ing.insumo.id].cantidadUsada += cantidadUsada;
+                         agrupadoPorInsumo[ing.insumo.id].vecesVendido += item.cantidad;
+                     }
+                 });
+             }
            }
         });
+
+        // Obtener Top Insumos
+        const insumosList = Object.values(agrupadoPorInsumo);
+        const topInsumoGanancia = insumosList.length > 0 
+            ? insumosList.reduce((max, obj) => obj.gananciaAportada > max.gananciaAportada ? obj : max, insumosList[0])
+            : null;
+            
+        const topInsumoUso = insumosList.length > 0 
+            ? insumosList.reduce((max, obj) => obj.vecesVendido > max.vecesVendido ? obj : max, insumosList[0])
+            : null;
 
         // Generar Array de Recetas y Matriz BCG
         const data = Object.values(agrupadoPorReceta);
@@ -206,8 +247,9 @@ export const Informes = () => {
           ventasTotales,
           ingresoBruto,
           gananciaNeta,
-          ticketPromedio,
-          rentabilidadPromedio
+          rentabilidadPromedio,
+          topInsumoGanancia,
+          topInsumoUso
         });
 
       } catch (error) {
@@ -301,14 +343,37 @@ export const Informes = () => {
             </div>
           </div>
 
-          <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Ticket Promedio</p>
+          <div className="bg-white/70 backdrop-blur-md p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-3">
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Líderes (Insumos)</p>
+              <div className="relative group/tooltip">
+                 <AlertCircle size={14} className="text-slate-400 cursor-help" />
+                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 p-3 bg-slate-800 text-white text-[11px] rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center font-medium">
+                   El insumo que te dejó más ganancia líquida y el que más se usó.
+                 </div>
+               </div>
             </div>
-            <div className="flex items-end justify-between">
-              <h3 className="text-3xl font-black text-slate-800 tracking-tighter truncate" title={`$${totals.ticketPromedio.toFixed(2)}`}>${totals.ticketPromedio.toFixed(2)}</h3>
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><Wallet size={18} strokeWidth={2.5} /></div>
-            </div>
+            
+            {totals.topInsumoGanancia ? (
+              <div className="flex flex-col gap-3">
+                 <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 bg-amber-50 text-amber-500 rounded-lg shrink-0"><Crown size={14} strokeWidth={2.5}/></div>
+                    <div className="overflow-hidden">
+                       <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Top Ganancia</p>
+                       <p className="text-sm font-bold text-slate-800 truncate" title={totals.topInsumoGanancia.nombre}>{totals.topInsumoGanancia.nombre}</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 bg-blue-50 text-blue-500 rounded-lg shrink-0"><PackageOpen size={14} strokeWidth={2.5}/></div>
+                    <div className="overflow-hidden">
+                       <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Top Uso</p>
+                       <p className="text-sm font-bold text-slate-800 truncate" title={totals.topInsumoUso.nombre}>{totals.topInsumoUso.nombre}</p>
+                    </div>
+                 </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center text-slate-400 text-xs font-medium">Sin datos en periodo</div>
+            )}
           </div>
 
           <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">

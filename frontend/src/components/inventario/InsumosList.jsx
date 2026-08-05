@@ -162,11 +162,27 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase, onVi
               
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-400">Rendimiento</p>
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Rendimiento</p>
+                    <div className="relative flex items-center group/tooltip">
+                      <Info size={12} className="text-slate-300 hover:text-blue-500 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-40 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center pointer-events-none shadow-lg">
+                        Porcentaje de la compra que realmente se usa luego de quitar desperdicios (merma).
+                      </div>
+                    </div>
+                  </div>
                   <p className="text-sm font-medium text-slate-700">{insumo.porcentaje_rendimiento}%</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-400">Costo ({insumo.unidad_compra})</p>
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Costo ({insumo.unidad_compra})</p>
+                    <div className="relative flex items-center group/tooltip">
+                      <Info size={12} className="text-slate-300 hover:text-blue-500 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-40 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center pointer-events-none shadow-lg">
+                        Precio que pagaste la última vez por 1 {insumo.unidad_compra}.
+                      </div>
+                    </div>
+                  </div>
                   <p className={`text-sm font-medium ${needsPurchase ? 'text-rose-500' : 'text-slate-700'}`}>
                     ${Number(insumo.costo_unidad_compra).toFixed(2)}
                   </p>
@@ -207,10 +223,10 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase, onVi
                   <button 
                     onClick={() => onViewKardex && onViewKardex(insumo)}
                     className="flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer mr-2 shadow-sm"
-                    title="Ver Kardex / Historial"
+                    title="Ver Detalles / Historial"
                   >
                     <Info size={14} className="text-slate-400" />
-                    Kardex
+                    Detalles
                   </button>
                   <button 
                     onClick={() => onEdit(insumo)}

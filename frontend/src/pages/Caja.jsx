@@ -306,7 +306,15 @@ export const Caja = () => {
                
                <div className={`p-5 rounded-2xl flex flex-col justify-between col-span-2 lg:col-span-2 transition-all ${isPerdida ? 'bg-[#D32F2F] shadow-[0_8px_16px_rgb(211,47,47,0.3)]' : 'bg-blue-600 shadow-[0_8px_16px_rgb(37,99,235,0.2)]'}`}>
                   <div className="flex justify-between items-start mb-2">
-                     <p className={`text-[10px] font-bold tracking-widest uppercase ${isPerdida ? 'text-white/90' : 'text-blue-200'}`}>Balance Total de la Jornada</p>
+                     <div className={`text-[10px] font-bold tracking-widest uppercase flex items-center gap-1 ${isPerdida ? 'text-white/90' : 'text-blue-200'}`}>
+                        Balance Total de la Jornada
+                        <div className="relative flex items-center group/tooltip">
+                            <Info size={12} className="cursor-help opacity-70 hover:opacity-100 transition-opacity" />
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center pointer-events-none shadow-xl normal-case font-normal leading-tight">
+                                Calculado como: Ventas (Efectivo y Tarjeta) - Gastos. Representa el resultado financiero del día.
+                            </div>
+                        </div>
+                     </div>
                      <DollarSign size={14} className={isPerdida ? 'text-white/90' : 'text-blue-200'} />
                   </div>
                   <h3 className="text-3xl font-black text-white">${balanceTotal.toFixed(2)}</h3>

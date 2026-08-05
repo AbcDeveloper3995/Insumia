@@ -4,7 +4,7 @@ import { comprasService } from '../services/api/compras';
 import { insumosService } from '../services/api/insumos';
 import { cajaService } from '../services/api/caja';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Plus, AlertTriangle, Building, Search, X, Wallet, Edit, Trash2, Save } from 'lucide-react';
+import { ShoppingCart, Plus, AlertTriangle, Building, Search, X, Wallet, Edit, Trash2, Save, Info } from 'lucide-react';
 import { supabase } from '../services/api/client';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
@@ -327,6 +327,7 @@ export const Compras = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Registrar Nueva Compra"
+        maxWidth="max-w-5xl"
       >
         <CompraForm 
           proveedores={proveedores} 

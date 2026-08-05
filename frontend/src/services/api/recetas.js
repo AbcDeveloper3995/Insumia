@@ -11,7 +11,7 @@ export const recetasService = {
         *,
         ingredientes:receta_ingredientes!receta_id(
           cantidad,
-          insumo:insumos(costo_unidad_compra, factor_conversion, porcentaje_rendimiento)
+          insumo:insumos(id, nombre, costo_unidad_compra, factor_conversion, porcentaje_rendimiento, unidad_base)
         )
       `)
       .order('nombre');

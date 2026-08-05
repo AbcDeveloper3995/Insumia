@@ -12,7 +12,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
     defaultValues: defaultValues || {
       nombre: '',
       tipo: 'platillo',
-      precio_venta: 0,
+      precio_venta: '',
       costo_total: 0,
       ingredientes: []
     },
@@ -27,7 +27,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
   // Observamos todo para asegurar renderizados
   const formValues = watch();
   const watchIngredientes = formValues.ingredientes || [];
-  const watchPrecioVenta = formValues.precio_venta || 0;
+  const watchPrecioVenta = Number(formValues.precio_venta) || 0;
 
   useEffect(() => {
     const fetchInsumos = async () => {
@@ -82,6 +82,14 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
   if (loadingDatos) {
     return <div className="p-8 text-center text-slate-500">Cargando constructor...</div>;
   }
+
+  const isFormValid = Boolean(
+    formValues.nombre?.trim() &&
+    formValues.precio_venta !== '' &&
+    formValues.precio_venta !== undefined &&
+    watchIngredientes.length > 0 &&
+    watchIngredientes.every(ing => ing.insumo_id && Number(ing.cantidad_uso) > 0)
+  );
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -186,7 +194,15 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                   {/* Desglose visual del costo por ingrediente */}
                   {selectedInsumo && (
                     <div className="flex items-center text-xs justify-end pr-12">
-                      <span className="text-slate-500 mr-2">Costo (inc. merma):</span>
+                      <span className="text-slate-500 mr-2 flex items-center gap-1">
+                          Costo (inc. merma):
+                          <div className="relative flex items-center group/tooltip">
+                            <Info size={12} className="text-slate-400 hover:text-blue-500 cursor-help" />
+                            <div className="absolute bottom-full right-0 mb-1.5 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center pointer-events-none shadow-lg normal-case font-normal leading-tight">
+                                Este costo ya asume el porcentaje de desperdicio configurado en el insumo.
+                            </div>
+                          </div>
+                      </span>
                       <span className="font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded">
                         ${costoDesglose.toFixed(2)}
                       </span>
@@ -219,10 +235,11 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
               <input
                 type="number"
                 step="0.5"
-                {...register('precio_venta', { min: 0 })}
+                {...register('precio_venta', { required: 'Requerido', min: { value: 0, message: 'Min 0' } })}
                 className="w-full pl-6 pr-2 py-1 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-white text-lg font-bold"
               />
             </div>
+            {errors.precio_venta && <span className="text-red-400 text-xs mt-1 block">{errors.precio_venta.message}</span>}
           </div>
 
           <div>
@@ -245,8 +262,8 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
       <div className="flex justify-end pt-4 border-t border-slate-200">
         <button
           type="submit"
-          disabled={isLoading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium cursor-pointer disabled:opacity-50"
+          disabled={isLoading || !isFormValid}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Guardando...' : 'Guardar Receta'}
         </button>

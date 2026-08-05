@@ -26,7 +26,6 @@ export const KardexModal = ({ insumo, onClose }) => {
   // KPIs
   const totalConsumido = movimientos.filter(m => m.tipo === 'venta' || m.tipo === 'merma').reduce((acc, m) => acc + Math.abs(Number(m.cantidad)), 0);
   const totalComprado = movimientos.filter(m => m.tipo === 'compra' || m.tipo === 'ajuste').reduce((acc, m) => acc + Number(m.cantidad), 0);
-  const gananciaGenerada = movimientos.filter(m => m.tipo === 'venta').reduce((acc, m) => acc + Number(m.ingreso_generado || 0), 0);
   
   // Costo por gramo actual (explicativo)
   const factor = Number(insumo.factor_conversion) || 1;
@@ -44,8 +43,31 @@ export const KardexModal = ({ insumo, onClose }) => {
                <Package size={24} />
              </div>
              <div>
-               <h2 className="text-2xl font-black text-slate-800">Kardex: {insumo.nombre}</h2>
-               <p className="text-sm font-medium text-slate-500">Auditoría detallada de entradas, salidas y ganancias.</p>
+               <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
+                 Kardex: {insumo.nombre}
+                 <div className="relative flex items-center group/tooltip mt-1">
+                     <Info size={20} className="cursor-help text-blue-400 hover:text-blue-600 transition-colors" />
+                     <div className="absolute top-full left-0 sm:left-0 mt-2 w-[300px] sm:w-[420px] max-h-[60vh] overflow-y-auto p-5 bg-white border border-slate-200 text-slate-600 text-[13px] rounded-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 shadow-2xl pointer-events-none font-normal leading-relaxed text-left custom-scrollbar">
+                         <p className="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 text-base flex items-center gap-2"><Lightbulb size={18} className="text-amber-500"/> Ingreso Bruto vs Ganancia Neta</p>
+                         
+                         <div className="space-y-2 mb-3">
+                            <p><strong className="text-blue-600">Ingreso Bruto Aportado:</strong> El dinero total cobrado al cliente por la parte proporcional de este insumo en la venta, sin descontar lo que te costó comprarlo.</p>
+                            <p><strong className="text-emerald-600">Ganancia Neta Líquida:</strong> El beneficio real obtenido. Es el ingreso bruto restándole estrictamente lo que te costó comprar este insumo.</p>
+                         </div>
+
+                         <p className="mb-2 text-slate-700 font-medium">Ejemplo de Referencia:</p>
+                         <p className="mb-2">Imagina que un insumo cuesta $3.33 y hacer la receta completa cuesta $3.80. El insumo representa el <strong>87.7% del costo</strong>. Si vendes la receta en $10.00:</p>
+                         <ul className="list-disc pl-5 mb-3 space-y-2">
+                             <li><strong>Aquí en Detalles (Kardex):</strong> Vemos el <em>Ingreso Bruto</em>. El insumo aportó el 87.7% de esos $10.00 de venta = <strong className="text-blue-600">$8.77</strong>.</li>
+                             <li><strong>En Resumen de Receta:</strong> Vemos la <em>Ganancia Neta</em>. La ganancia total fue $6.20 ($10 - $3.80), el insumo aportó el 87.7% de esos $6.20 = <strong className="text-emerald-600">$5.44</strong>.</li>
+                         </ul>
+                         <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 shrink-0 mt-3">
+                           <p className="text-xs text-slate-500 font-mono">Cálculo: $8.77 (Ingreso) - $3.33 (Costo) = $5.44 (Ganancia Neta)</p>
+                         </div>
+                     </div>
+                 </div>
+               </h2>
+               <p className="text-sm font-medium text-slate-500">Auditoría detallada de entradas, salidas e ingresos.</p>
              </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-colors cursor-pointer">
@@ -73,14 +95,14 @@ export const KardexModal = ({ insumo, onClose }) => {
                   </div>
               </div>
 
-              {/* Bloque 2: Ganancia Proporcional */}
+              {/* Bloque 2: Ingreso Proporcional */}
               <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 relative overflow-hidden group">
                   <div className="flex items-start gap-3 relative z-10">
                       <Lightbulb className="text-indigo-500 mt-1 shrink-0" size={20} />
                       <div>
-                          <h4 className="text-indigo-900 font-bold mb-1">2. ¿Qué es la Ganancia Generada?</h4>
+                          <h4 className="text-indigo-900 font-bold mb-1">2. ¿Qué es el Ingreso Aportado?</h4>
                           <p className="text-indigo-800/80 text-sm leading-relaxed">
-                              Es una <strong>distribución proporcional</strong>. Si en una hamburguesa el Tomate representa el <strong>10% del costo total</strong> de hacerla, entonces cuando vendas esa hamburguesa, diremos que el Tomate "aportó" el <strong>10% del dinero de esa venta</strong>. Así descubres qué ingredientes te hacen ganar más dinero.
+                              Esta tabla audita el <strong>Ingreso Bruto Aportado</strong>. Pasa el cursor sobre el ícono de información (i) junto al título del modal para ver una referencia matemática de la diferencia entre el Ingreso que ves aquí, y la Ganancia Neta Líquida que ves en el Resumen de Recetas.
                           </p>
                       </div>
                   </div>
@@ -109,7 +131,7 @@ export const KardexModal = ({ insumo, onClose }) => {
                                     <th className="py-3 px-6 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha / Hora</th>
                                     <th className="py-3 px-6 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detalle</th>
                                     <th className="py-3 px-6 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Cant. ({insumo.unidad_base})</th>
-                                    <th className="py-3 px-6 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Valor / Ganancia</th>
+                                    <th className="py-3 px-6 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Valor / Ingreso</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">

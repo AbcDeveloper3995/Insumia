@@ -266,23 +266,23 @@ export const Dashboard = () => {
 
           {/* KPI 5: Ganancia Real */}
           <motion.div variants={itemVariants}>
-            <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-sky-200 hover:shadow-[0_8px_30px_rgb(14,165,233,0.1)] hover:-translate-y-1 transition-all duration-300 block group relative">
+            <div className="bg-white/70 backdrop-blur-md p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-blue-200 hover:shadow-[0_8px_30px_rgb(59,130,246,0.1)] hover:-translate-y-1 transition-all duration-300 block group relative">
               <div className="flex justify-between items-start">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
                     <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Ganancia Total</p>
                     <div className="relative flex items-center group/tooltip">
-                      <Info size={14} className="text-slate-400 hover:text-sky-500 transition-colors cursor-help" />
+                      <Info size={14} className="text-slate-400 hover:text-blue-500 transition-colors cursor-help" />
                       <div className="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 text-center pointer-events-none">
                         Beneficio neto histórico (precio de venta - costo de insumos) acumulado.
                       </div>
                     </div>
                   </div>
-                  <h3 className="text-4xl font-black text-slate-800 tracking-tighter group-hover:text-sky-600 transition-colors truncate" title={`$${stats.gananciaTotal.toFixed(2)}`}>
+                  <h3 className="text-4xl font-black text-slate-800 tracking-tighter group-hover:text-blue-600 transition-colors truncate" title={`$${stats.gananciaTotal.toFixed(2)}`}>
                     ${stats.gananciaTotal.toFixed(2)}
                   </h3>
                 </div>
-                <div className="p-3.5 bg-sky-50 text-sky-600 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm ml-2 flex-shrink-0">
+                <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm ml-2 flex-shrink-0">
                   <TrendingUp size={24} strokeWidth={2.5} />
                 </div>
               </div>
@@ -375,6 +375,7 @@ export const Dashboard = () => {
                     <Tooltip 
                       formatter={(value) => [`$${value.toFixed(2)}`, 'Ganancia']}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      wrapperStyle={{ zIndex: 100 }}
                     />
                     <Pie
                       data={topIngredientes}

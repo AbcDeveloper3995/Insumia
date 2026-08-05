@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ShoppingCart, Plus, X, Search, Trash2 } from 'lucide-react';
+import { ShoppingCart, Plus, X, Search, Trash2, Info } from 'lucide-react';
 
 export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoading = false }) => {
   const [proveedorId, setProveedorId] = useState('');
@@ -13,6 +13,12 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
   }, [insumos, insumoSearch]);
 
   const totalCompra = carrito.reduce((acc, curr) => acc + (curr.costo_total || 0), 0);
+
+  const isFormValid = Boolean(
+    proveedorId &&
+    carrito.length > 0 &&
+    carrito.every(item => item.cantidad > 0 && item.costo_total >= 0)
+  );
 
   const agregarAlCarrito = (insumo) => {
     if (carrito.find(item => item.insumo.id === insumo.id)) return;
@@ -130,8 +136,14 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
 
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">
+                      <label className="text-[10px] text-slate-500 uppercase font-bold flex items-center gap-1 mb-1">
                         Cantidad ({item.insumo.unidad_compra})
+                        <div className="relative flex items-center group/tooltip">
+                            <Info size={10} className="text-slate-300 hover:text-blue-500 cursor-help" />
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-40 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center pointer-events-none shadow-lg normal-case font-normal">
+                                Ingresa cuántas unidades de compra adquiriste (Ej: 2 cajas, 5 costales).
+                            </div>
+                        </div>
                       </label>
                       <input 
                         type="number" 
@@ -197,7 +209,7 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
 
       {/* Submit */}
       <div className="shrink-0 pt-4 mt-4 border-t border-slate-200 flex justify-end gap-3">
-        <button type="submit" disabled={isLoading} className="px-8 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm">
+        <button type="submit" disabled={isLoading || !isFormValid} className="px-8 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm cursor-pointer disabled:cursor-not-allowed">
           {isLoading ? 'Registrando...' : 'Registrar Compra'}
         </button>
       </div>

@@ -1,7 +1,7 @@
 import { ChefHat, Edit, Trash2, TrendingUp, AlertTriangle, Info, Calculator, Percent, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export const RecetasList = ({ recetas, onEdit, onDelete }) => {
+export const RecetasList = ({ recetas, onEdit, onDelete, onViewResumen }) => {
   if (!recetas || recetas.length === 0) {
     return (
       <div className="space-y-6">
@@ -172,6 +172,14 @@ export const RecetasList = ({ recetas, onEdit, onDelete }) => {
                 {receta.tipo.substring(0,3)}
               </span>
               <div className="flex space-x-1">
+                <button 
+                  onClick={() => onViewResumen && onViewResumen(receta)}
+                  className="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold py-1 px-2 rounded-md text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer mr-1 shadow-sm"
+                  title="Ver Desglose de Costo y Ganancia"
+                >
+                  <Calculator size={12} className="text-blue-500" />
+                  Resumen
+                </button>
                 <button 
                   onClick={() => onEdit(receta)}
                   className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
