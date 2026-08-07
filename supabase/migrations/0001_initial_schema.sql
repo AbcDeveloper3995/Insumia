@@ -11,12 +11,21 @@ CREATE TABLE restaurantes (
 -- 2. Tabla: usuarios
 CREATE TABLE usuarios (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    restaurante_id UUID NOT NULL REFERENCES restaurantes(id) ON DELETE CASCADE,
     nombre TEXT NOT NULL,
-    rol TEXT NOT NULL DEFAULT 'admin'
+    apellidos TEXT NOT NULL,
+    telefono TEXT NOT NULL
 );
 
--- 3. Tabla: insumos
+-- 3. Tabla: usuario_restaurantes (Relación N:M)
+CREATE TABLE usuario_restaurantes (
+    usuario_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
+    restaurante_id UUID REFERENCES restaurantes(id) ON DELETE CASCADE,
+    rol TEXT NOT NULL DEFAULT 'admin',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (usuario_id, restaurante_id)
+);
+
+-- 4. Tabla: insumos
 CREATE TABLE insumos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurante_id UUID NOT NULL REFERENCES restaurantes(id) ON DELETE CASCADE,
@@ -31,7 +40,7 @@ CREATE TABLE insumos (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. Tabla: recetas
+-- 5. Tabla: recetas
 CREATE TABLE recetas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurante_id UUID NOT NULL REFERENCES restaurantes(id) ON DELETE CASCADE,
@@ -42,7 +51,7 @@ CREATE TABLE recetas (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 5. Tabla: receta_ingredientes
+-- 6. Tabla: receta_ingredientes
 CREATE TABLE receta_ingredientes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     receta_id UUID NOT NULL REFERENCES recetas(id) ON DELETE CASCADE,
@@ -55,7 +64,7 @@ CREATE TABLE receta_ingredientes (
     )
 );
 
--- 6. Tabla: ventas
+-- 7. Tabla: ventas
 CREATE TABLE ventas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurante_id UUID NOT NULL REFERENCES restaurantes(id) ON DELETE CASCADE,
@@ -63,7 +72,7 @@ CREATE TABLE ventas (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. Tabla: venta_detalles
+-- 8. Tabla: venta_detalles
 CREATE TABLE venta_detalles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     venta_id UUID NOT NULL REFERENCES ventas(id) ON DELETE CASCADE,
@@ -78,33 +87,47 @@ CREATE TABLE venta_detalles (
 -- Habilitar RLS en todas las tablas
 ALTER TABLE restaurantes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE usuario_restaurantes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE insumos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recetas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE receta_ingredientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ventas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE venta_detalles ENABLE ROW LEVEL SECURITY;
 
--- Función de ayuda para obtener el restaurante del usuario autenticado
-CREATE OR REPLACE FUNCTION public.obtener_restaurante_id() 
-RETURNS UUID AS $$
-  SELECT restaurante_id FROM public.usuarios WHERE id = auth.uid() LIMIT 1;
+-- Función de ayuda para obtener los restaurantes del usuario autenticado
+CREATE OR REPLACE FUNCTION public.obtener_restaurantes_del_usuario() 
+RETURNS SETOF UUID AS $$
+  SELECT restaurante_id FROM public.usuario_restaurantes WHERE usuario_id = auth.uid();
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- Políticas para restaurantes (Un usuario solo ve su propio restaurante)
+-- Políticas para restaurantes (Un usuario solo ve los restaurantes a los que pertenece)
 CREATE POLICY "Restaurantes visibles por sus usuarios" ON restaurantes
-    FOR SELECT USING (id = public.obtener_restaurante_id());
+    FOR ALL USING (id IN (SELECT public.obtener_restaurantes_del_usuario()));
 
--- Políticas para usuarios (Ven usuarios de su mismo restaurante)
-CREATE POLICY "Usuarios del mismo restaurante" ON usuarios
-    FOR ALL USING (restaurante_id = public.obtener_restaurante_id());
+-- Políticas para usuarios (Un usuario se ve a sí mismo, y a otros de sus restaurantes)
+CREATE POLICY "Usuarios del mismo restaurante o sí mismo" ON usuarios
+    FOR ALL USING (
+        id = auth.uid() OR
+        id IN (
+            SELECT usuario_id FROM usuario_restaurantes 
+            WHERE restaurante_id IN (SELECT public.obtener_restaurantes_del_usuario())
+        )
+    );
+
+-- Políticas para usuario_restaurantes
+CREATE POLICY "Usuario_restaurantes visibles" ON usuario_restaurantes
+    FOR ALL USING (
+        usuario_id = auth.uid() OR
+        restaurante_id IN (SELECT public.obtener_restaurantes_del_usuario())
+    );
 
 -- Políticas para insumos
 CREATE POLICY "Insumos del mismo restaurante" ON insumos
-    FOR ALL USING (restaurante_id = public.obtener_restaurante_id());
+    FOR ALL USING (restaurante_id IN (SELECT public.obtener_restaurantes_del_usuario()));
 
 -- Políticas para recetas
 CREATE POLICY "Recetas del mismo restaurante" ON recetas
-    FOR ALL USING (restaurante_id = public.obtener_restaurante_id());
+    FOR ALL USING (restaurante_id IN (SELECT public.obtener_restaurantes_del_usuario()));
 
 -- Políticas para receta_ingredientes (A través de la receta)
 CREATE POLICY "Ingredientes del mismo restaurante" ON receta_ingredientes
@@ -112,13 +135,13 @@ CREATE POLICY "Ingredientes del mismo restaurante" ON receta_ingredientes
         EXISTS (
             SELECT 1 FROM recetas 
             WHERE recetas.id = receta_ingredientes.receta_id 
-            AND recetas.restaurante_id = public.obtener_restaurante_id()
+            AND recetas.restaurante_id IN (SELECT public.obtener_restaurantes_del_usuario())
         )
     );
 
 -- Políticas para ventas
 CREATE POLICY "Ventas del mismo restaurante" ON ventas
-    FOR ALL USING (restaurante_id = public.obtener_restaurante_id());
+    FOR ALL USING (restaurante_id IN (SELECT public.obtener_restaurantes_del_usuario()));
 
 -- Políticas para venta_detalles (A través de ventas)
 CREATE POLICY "Detalles de venta del mismo restaurante" ON venta_detalles
@@ -126,6 +149,6 @@ CREATE POLICY "Detalles de venta del mismo restaurante" ON venta_detalles
         EXISTS (
             SELECT 1 FROM ventas 
             WHERE ventas.id = venta_detalles.venta_id 
-            AND ventas.restaurante_id = public.obtener_restaurante_id()
+            AND ventas.restaurante_id IN (SELECT public.obtener_restaurantes_del_usuario())
         )
     );

@@ -4,13 +4,14 @@ import {
   LayoutDashboard, 
   Package, 
   ChefHat, 
-  ShoppingCart,
+  ShoppingCart, 
   BarChart3,
   Menu,
   ChevronLeft,
   LogOut,
   Wallet,
-  Truck
+  Truck,
+  Store
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/auth/authService';
@@ -36,6 +37,7 @@ export const Sidebar = () => {
     { to: '/recetas', icon: <ChefHat size={20} />, label: 'Recetas' },
     { to: '/ventas', icon: <ShoppingCart size={20} />, label: 'Punto de Venta' },
     { to: '/informes', icon: <BarChart3 size={20} />, label: 'Informes' },
+    { to: '/seleccionar-restaurante', icon: <Store size={20} />, label: 'Mis Restaurantes' },
   ];
 
   return (

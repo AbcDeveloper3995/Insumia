@@ -25,12 +25,16 @@ BEGIN
         'email', NOW(), NOW(), NOW()
     );
 
-    -- 2. Crear Restaurante "Sistema/Admin"
+    -- 2. Crear Perfil de Usuario Administrador en el negocio
+    INSERT INTO public.usuarios (id, nombre, apellidos, telefono)
+    VALUES (new_user_id, 'Anthuan', 'Admin', '123456789');
+
+    -- 3. Crear Restaurante "Sistema/Admin"
     INSERT INTO public.restaurantes (id, nombre)
     VALUES (new_restaurante_id, 'Insumia Sistema');
 
-    -- 3. Crear Perfil de Usuario Administrador en el negocio
-    INSERT INTO public.usuarios (id, restaurante_id, nombre, rol)
-    VALUES (new_user_id, new_restaurante_id, 'anthuan', 'admin');
+    -- 4. Asociar usuario al restaurante
+    INSERT INTO public.usuario_restaurantes (usuario_id, restaurante_id, rol)
+    VALUES (new_user_id, new_restaurante_id, 'admin');
 
 END $$;

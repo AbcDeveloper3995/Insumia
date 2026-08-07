@@ -12,12 +12,7 @@ export const Login = () => {
     setError(null);
     setLoading(true);
 
-    let userIdentifier = e.target.username.value;
-    
-    // Si el usuario no escribe un correo completo, le agregamos el dominio por defecto del sistema
-    if (!userIdentifier.includes('@')) {
-      userIdentifier = `${userIdentifier}@insumia.com`;
-    }
+    let userIdentifier = e.target.email.value;
 
     const password = e.target.password.value;
 
@@ -47,14 +42,14 @@ export const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Usuario o Correo Electrónico
+              Correo Electrónico
             </label>
             <input
-              type="text"
-              name="username"
+              type="email"
+              name="email"
               required
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
-              placeholder="anthuan"
+              placeholder="tu@correo.com"
             />
           </div>
           <div>
@@ -81,7 +76,7 @@ export const Login = () => {
         <p className="mt-6 text-center text-sm text-slate-600">
           ¿No tienes una cuenta?{' '}
           <Link to="/register" className="text-blue-600 hover:underline">
-            Registra tu Restaurante
+            Crear cuenta
           </Link>
         </p>
       </div>

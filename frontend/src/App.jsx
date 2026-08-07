@@ -10,6 +10,7 @@ import { PuntoVenta } from './pages/PuntoVenta';
 import { Informes } from './pages/Informes';
 import { Caja } from './pages/Caja';
 import { Compras } from './pages/Compras';
+import { SeleccionRestaurante } from './pages/SeleccionRestaurante';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/seleccionar-restaurante" element={<SeleccionRestaurante />} />
         
         {/* Rutas Protegidas */}
         <Route element={<ProtectedRoute />}>

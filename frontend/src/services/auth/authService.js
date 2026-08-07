@@ -22,12 +22,9 @@ export const authService = {
   },
 
   /**
-   * Registrar nuevo usuario y restaurante (Flujo combinado)
-   * 1. Crea el usuario en Supabase Auth
-   * 2. Llama al RPC para crear Restaurante y Perfil de Usuario
+   * Registrar nuevo usuario
    */
-  async registerNewRestaurant(email, password, restauranteNombre, usuarioNombre) {
-    // 1. Crear usuario en Auth
+  async registerUser(email, password, nombre, apellidos, telefono) {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -35,23 +32,81 @@ export const authService = {
     
     if (authError) throw authError;
 
-    // 2. Ejecutar RPC para negocio
-    const { data: rpcData, error: rpcError } = await supabase.rpc('registrar_restaurante_y_usuario', {
-      p_nombre_restaurante: restauranteNombre,
-      p_nombre_usuario: usuarioNombre
+    const { data: rpcData, error: rpcError } = await supabase.rpc('completar_perfil_usuario', {
+      p_nombre: nombre,
+      p_apellidos: apellidos,
+      p_telefono: telefono
     });
 
-    if (rpcError) {
-      // Idealmente, se haría un rollback del usuario de auth si falla el negocio,
-      // pero para el MVP lanzamos el error
-      throw rpcError;
-    }
+    if (rpcError) throw rpcError;
 
     if (rpcData && !rpcData.success) {
-      throw new Error(rpcData.error || 'Error al registrar el restaurante');
+      throw new Error(rpcData.error || 'Error al completar perfil');
     }
 
     return { authData, rpcData };
+  },
+
+  /**
+   * Crear nuevo restaurante
+   */
+  async createRestaurant(nombreRestaurante) {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('crear_restaurante', {
+      p_nombre_restaurante: nombreRestaurante
+    });
+
+    if (rpcError) throw rpcError;
+    if (rpcData && !rpcData.success) {
+      throw new Error(rpcData.error || 'Error al crear restaurante');
+    }
+    return rpcData;
+  },
+
+  /**
+   * Actualizar nombre de restaurante
+   */
+  async updateRestaurant(id, nombre) {
+    const { error } = await supabase
+      .from('restaurantes')
+      .update({ nombre })
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
+  },
+
+  /**
+   * Eliminar restaurante
+   */
+  async deleteRestaurant(id) {
+    const { error } = await supabase
+      .from('restaurantes')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
+  },
+
+  /**
+   * Obtener restaurantes del usuario
+   */
+  async getMyRestaurants() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return [];
+    
+    // Consulta directa a la tabla restaurantes, RLS filtrará por los del usuario
+    const { data, error } = await supabase
+      .from('restaurantes')
+      .select('id, nombre, created_at');
+
+    if (error) {
+      console.error("Error fetching restaurants:", error);
+      throw error;
+    }
+    
+    console.log("Restaurantes obtenidos:", data);
+    return data || [];
   },
 
   /**

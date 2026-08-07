@@ -19,9 +19,7 @@ DROP POLICY IF EXISTS "Usuarios pueden ver movimientos de su restaurante" ON ins
 CREATE POLICY "Usuarios pueden ver movimientos de su restaurante"
 ON insumo_movimientos FOR SELECT
 USING (
-  restaurante_id IN (
-    SELECT restaurante_id FROM usuarios WHERE id = auth.uid()
-  )
+  restaurante_id IN (SELECT public.obtener_restaurantes_del_usuario())
 );
 
 -- Actualizar la función registrar_venta para que llene el Kardex

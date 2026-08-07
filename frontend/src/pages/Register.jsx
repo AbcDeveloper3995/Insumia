@@ -10,18 +10,30 @@ export const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
 
     const email = e.target.email.value;
     const password = e.target.password.value;
-    const restauranteNombre = e.target.restauranteNombre.value;
-    const usuarioNombre = e.target.usuarioNombre.value;
+    const confirmPassword = e.target.confirmPassword.value;
+    const nombre = e.target.nombre.value;
+    const apellidos = e.target.apellidos.value;
+    const telefono = e.target.telefono.value;
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      await authService.registerNewRestaurant(email, password, restauranteNombre, usuarioNombre);
-      navigate('/');
+      await authService.registerUser(email, password, nombre, apellidos, telefono);
+      
+      // Aseguramos que la sesión no quede activa para forzar el login
+      await authService.signOut();
+      
+      navigate('/login');
     } catch (err) {
-      setError(err.message || 'Error al registrar');
+      setError(err.message || 'Error al registrarse');
     } finally {
       setLoading(false);
     }
@@ -34,7 +46,7 @@ export const Register = () => {
           Crear Cuenta
         </h1>
         <p className="text-slate-500 text-center mb-6 text-sm">
-          Registra tu restaurante en Insumia
+          Únete a Insumia y gestiona tus restaurantes
         </p>
         
         {error && (
@@ -44,30 +56,46 @@ export const Register = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Nombre
+              </label>
+              <input
+                type="text"
+                name="nombre"
+                required
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+                placeholder="Juan"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Apellidos
+              </label>
+              <input
+                type="text"
+                name="apellidos"
+                required
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+                placeholder="Pérez"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Nombre del Restaurante
+              Teléfono
             </label>
             <input
-              type="text"
-              name="restauranteNombre"
+              type="tel"
+              name="telefono"
               required
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
-              placeholder="Ej. El Buen Comer"
+              placeholder="+123456789"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Tu Nombre (Administrador)
-            </label>
-            <input
-              type="text"
-              name="usuarioNombre"
-              required
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
-              placeholder="Juan Pérez"
-            />
-          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Correo Electrónico
@@ -80,6 +108,7 @@ export const Register = () => {
               placeholder="tu@correo.com"
             />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Contraseña
@@ -93,12 +122,27 @@ export const Register = () => {
               placeholder="••••••••"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Confirmar Contraseña
+            </label>
+            <input
+              type="password"
+              name="confirmPassword"
+              required
+              minLength={6}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+              placeholder="••••••••"
+            />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 mt-4"
           >
-            {loading ? 'Registrando...' : 'Registrar Restaurante'}
+            {loading ? 'Registrando...' : 'Registrar Cuenta'}
           </button>
         </form>
 

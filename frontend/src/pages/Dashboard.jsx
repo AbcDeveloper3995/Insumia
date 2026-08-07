@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { insumosService } from '../services/api/insumos';
 import { recetasService } from '../services/api/recetas';
 import { ventasService } from '../services/api/ventas';
+import { useAuth } from '../context/AuthContext';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend
@@ -13,6 +14,7 @@ import { motion } from 'framer-motion';
 import { LoadingSpinner } from '../components/ui/Loading';
 
 export const Dashboard = () => {
+  const { currentRestaurant } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     insumosCount: 0,
@@ -140,7 +142,7 @@ export const Dashboard = () => {
         
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Panel Principal</h1>
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Panel Principal <span className="text-blue-600 ml-1">{currentRestaurant ? `- ${currentRestaurant.nombre}` : ''}</span></h1>
             <p className="text-slate-500 mt-1 text-sm">Resumen en tiempo real del estado de tu restaurante.</p>
           </div>
           {loading && (
