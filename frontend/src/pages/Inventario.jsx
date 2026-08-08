@@ -9,6 +9,10 @@ import { InsumoForm } from '../components/inventario/InsumoForm';
 import { InsumosList } from '../components/inventario/InsumosList';
 import { InsumoCompraInicial } from '../components/inventario/InsumoCompraInicial';
 import { KardexModal } from '../components/inventario/KardexModal';
+import { MermasList } from '../components/inventario/MermasList';
+import { MermaForm } from '../components/inventario/MermaForm';
+import { mermasService } from '../services/api/mermas';
+import { recetasService } from '../services/api/recetas';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
 import { supabase } from '../services/api/client';
@@ -21,8 +25,13 @@ export const Inventario = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
+  const [activeTab, setActiveTab] = useState('stock'); // 'stock' o 'mermas'
+  const [mermas, setMermas] = useState([]);
+  const [recetas, setRecetas] = useState([]);
+  
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMermaModalOpen, setIsMermaModalOpen] = useState(false);
   const [modalStep, setModalStep] = useState(1); // 1 = form insumo, 2 = compra inicial
   const [editingInsumo, setEditingInsumo] = useState(null);
   const [createdInsumo, setCreatedInsumo] = useState(null);
@@ -45,6 +54,12 @@ export const Inventario = () => {
             
             const caja = await cajaService.getCajaAbierta(currentRestaurant?.id);
             setCajaActiva(caja);
+
+            const mermasData = await mermasService.getMermas(currentRestaurant?.id);
+            setMermas(mermasData || []);
+
+            const recetasData = await recetasService.getRecetas();
+            setRecetas(recetasData || []);
          }
       }
     } catch (error) {
@@ -152,16 +167,26 @@ export const Inventario = () => {
       }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar este insumo?')) {
-      try {
-        await insumosService.deleteInsumo(id);
-        toast.success('Insumo eliminado');
-        loadData();
-      } catch (error) {
-        console.error('Error eliminando:', error);
-        toast.error('Error al eliminar');
-      }
+  const handleDelete = async (insumo) => {
+    try {
+      await insumosService.deleteInsumo(insumo.id);
+      toast.success('Insumo eliminado');
+      await loadData();
+    } catch (error) {
+      console.error('Error eliminando:', error);
+      toast.error('Error al eliminar el insumo');
+    }
+  };
+
+  const handleMermaSubmit = async (formData) => {
+    try {
+      await mermasService.registrarMerma(currentRestaurant.id, formData.detalles, formData.notas);
+      toast.success('¡Merma registrada exitosamente!');
+      setIsMermaModalOpen(false);
+      await loadData();
+    } catch (error) {
+      console.error('Error registrando merma:', error);
+      toast.error('Error al registrar la merma');
     }
   };
 
@@ -217,14 +242,40 @@ export const Inventario = () => {
               />
             </div>
 
-            <button
-              onClick={() => handleOpenModal()}
-              className="flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
-            >
-              <Plus size={18} />
-              <span>Nuevo Insumo</span>
-            </button>
+            {activeTab === 'stock' && (
+              <button
+                onClick={() => handleOpenModal()}
+                className="flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+              >
+                <Plus size={18} />
+                <span>Nuevo Insumo</span>
+              </button>
+            )}
           </div>
+        </div>
+
+        {/* Pestañas */}
+        <div className="px-8 bg-white border-b border-slate-100 flex gap-6 shrink-0">
+          <button
+            onClick={() => setActiveTab('stock')}
+            className={`py-4 font-bold text-sm border-b-2 transition-colors ${
+              activeTab === 'stock' 
+                ? 'border-blue-600 text-blue-700' 
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Stock Crudo e Insumos
+          </button>
+          <button
+            onClick={() => setActiveTab('mermas')}
+            className={`py-4 font-bold text-sm border-b-2 transition-colors ${
+              activeTab === 'mermas' 
+                ? 'border-rose-500 text-rose-600' 
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Control de Mermas
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-8">
@@ -235,15 +286,24 @@ export const Inventario = () => {
             )}
 
             {loading ? (
-              <LoadingSpinner text="Cargando catálogo..." />
+              <LoadingSpinner text="Cargando..." />
             ) : (
-              <InsumosList 
-                insumos={filteredInsumos} 
-                onEdit={handleOpenModal} 
-                onDelete={handleDelete} 
-                onInitialPurchase={handleOpenCompraInicial}
-                onViewKardex={setSelectedKardexInsumo}
-              />
+              activeTab === 'stock' ? (
+                <InsumosList 
+                  insumos={filteredInsumos} 
+                  onEdit={handleOpenModal} 
+                  onDelete={handleDelete} 
+                  onInitialPurchase={handleOpenCompraInicial}
+                  onViewKardex={setSelectedKardexInsumo}
+                />
+              ) : (
+                <MermasList 
+                  mermas={mermas} 
+                  insumos={insumos}
+                  recetas={recetas}
+                  onNewMerma={() => setIsMermaModalOpen(true)}
+                />
+              )
             )}
         </div>
       </div>
@@ -275,6 +335,15 @@ export const Inventario = () => {
         <KardexModal 
           insumo={selectedKardexInsumo} 
           onClose={() => setSelectedKardexInsumo(null)} 
+        />
+      )}
+
+      {isMermaModalOpen && (
+        <MermaForm
+          insumos={insumos}
+          recetas={recetas}
+          onClose={() => setIsMermaModalOpen(false)}
+          onSubmit={handleMermaSubmit}
         />
       )}
     </div>

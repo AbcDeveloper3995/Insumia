@@ -21,6 +21,7 @@ import {
 import { LoadingSpinner } from '../components/ui/Loading';
 import { ventasService } from '../services/api/ventas';
 import { recetasService } from '../services/api/recetas';
+import { mermasService } from '../services/api/mermas';
 import { supabase } from '../services/api/client';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -41,6 +42,7 @@ export const Informes = () => {
     ventasTotales: 0,
     ingresoBruto: 0,
     gananciaNeta: 0,
+    perdidaMermas: 0,
     rentabilidadPromedio: 0,
     topInsumoGanancia: null,
     topInsumoUso: null
@@ -69,189 +71,184 @@ export const Informes = () => {
         const sessionRes = await supabase.auth.getSession();
         const user = sessionRes.data?.session?.user;
         if (!user) return;
-        const restauranteId = currentRestaurant?.id;
-
-        // Cargar recetas activas
-        const recetas = await recetasService.getRecetas();
-        const recetasActivas = recetas?.filter(r => Number(r.precio_venta) > 0) || [];
         
-        // Cargar todas las ventas filtradas
-        const productosData = await ventasService.getVentasReporte(startDate, dateFilter === 'historico' ? null : endDate);
-        
-        // (Cajas y Compras fueron movidos a Caja.jsx)
+        if (currentRestaurant?.id) {
+          const [productosData, recetas, mermasData] = await Promise.all([
+            ventasService.getVentasReporte(startDate, dateFilter === 'historico' ? null : endDate),
+            recetasService.getRecetas(),
+            mermasService.getMermas(currentRestaurant.id)
+          ]);
 
-        let ventasTotales = 0;
-        let ingresoBruto = 0;
-        let gananciaNeta = 0;
-        let ventasUnicas = new Set();
-        
-        const agrupadoPorReceta = {};
-        const agrupadoPorFecha = {};
-        const agrupadoPorPago = { efectivo: 0, tarjeta: 0, transferencia: 0 };
-        const agrupadoPorInsumo = {};
-        let catPlatillos = 0;
-        let catSubrecetas = 0;
+          let mermasFiltradas = mermasData || [];
+          if (startDate) {
+            mermasFiltradas = mermasFiltradas.filter(m => new Date(m.fecha) >= startDate);
+          }
+          if (dateFilter !== 'historico') {
+             mermasFiltradas = mermasFiltradas.filter(m => new Date(m.fecha) <= endDate);
+          }
 
-        productosData.forEach(item => {
-           const receta = recetasActivas.find(r => r.id === item.receta_id);
-           if (receta) {
-             const costoUnitario = Number(receta.costo_total) || 0;
-             const precioVenta = Number(receta.precio_venta) || 0;
-             const gananciaUnitaria = precioVenta - costoUnitario;
-             const ingresoTotalItem = precioVenta * item.cantidad;
-             const gananciaTotalItem = gananciaUnitaria * item.cantidad;
-             
-             ventasTotales += item.cantidad;
-             ingresoBruto += ingresoTotalItem;
-             gananciaNeta += gananciaTotalItem;
-             
-             // Agrupar Recetas
-             if (!agrupadoPorReceta[receta.id]) {
-               agrupadoPorReceta[receta.id] = {
-                 id: receta.id,
-                 nombre: receta.nombre,
-                 es_subreceta: receta.es_subreceta,
-                 cantidad: 0,
-                 precioVenta: precioVenta,
-                 costoInsumos: costoUnitario,
-                 gananciaUnitaria: gananciaUnitaria,
-                 ingresoBruto: 0,
-                 gananciaTotal: 0,
-               };
-             }
-             agrupadoPorReceta[receta.id].cantidad += item.cantidad;
-             agrupadoPorReceta[receta.id].ingresoBruto += ingresoTotalItem;
-             agrupadoPorReceta[receta.id].gananciaTotal += gananciaTotalItem;
+          let perdidaMermas = 0;
+          mermasFiltradas.forEach(m => {
+            perdidaMermas += Number(m.total_perdida || 0);
+          });
 
-             // Agrupar por Método de Pago
-             if (item.ventas && item.ventas.metodo_pago) {
-                const mp = item.ventas.metodo_pago.toLowerCase();
-                if (agrupadoPorPago[mp] !== undefined) {
-                   agrupadoPorPago[mp] += ingresoTotalItem;
-                }
-             }
+          const recetasActivas = recetas?.filter(r => Number(r.precio_venta) > 0) || [];
+          
+          let ventasTotales = 0;
+          let ingresoBruto = 0;
+          let gananciaNeta = 0;
+          let ventasUnicas = new Set();
+          
+          const agrupadoPorReceta = {};
+          const agrupadoPorFecha = {};
+          const agrupadoPorPago = { efectivo: 0, tarjeta: 0, transferencia: 0 };
+          const agrupadoPorInsumo = {};
 
-             // Categorías (Platillo vs Subreceta en venta directa)
-             if (item.ventas && item.ventas.id) {
-               ventasUnicas.add(item.ventas.id);
-             }
-
-             // Agrupar Tendencias
-             if (item.ventas && item.ventas.created_at) {
-               const fechaObj = new Date(item.ventas.created_at);
-               const fechaStr = dateFilter === 'hoy' 
-                 ? `${fechaObj.getHours().toString().padStart(2, '0')}:00` 
-                 : fechaObj.toISOString().split('T')[0];
-                 
-               if (!agrupadoPorFecha[fechaStr]) {
-                 agrupadoPorFecha[fechaStr] = { fecha: fechaStr, ventas: 0, ganancia: 0 };
+          productosData.forEach(item => {
+             const receta = recetasActivas.find(r => r.id === item.receta_id);
+             if (receta) {
+               const costoUnitario = Number(receta.costo_total) || 0;
+               const precioVenta = Number(receta.precio_venta) || 0;
+               const gananciaUnitaria = precioVenta - costoUnitario;
+               const ingresoTotalItem = precioVenta * item.cantidad;
+               const gananciaTotalItem = gananciaUnitaria * item.cantidad;
+               
+               ventasTotales += item.cantidad;
+               ingresoBruto += ingresoTotalItem;
+               gananciaNeta += gananciaTotalItem;
+               
+               if (!agrupadoPorReceta[receta.id]) {
+                 agrupadoPorReceta[receta.id] = {
+                   id: receta.id,
+                   nombre: receta.nombre,
+                   es_subreceta: receta.es_subreceta,
+                   cantidad: 0,
+                   precioVenta: precioVenta,
+                   costoInsumos: costoUnitario,
+                   gananciaUnitaria: gananciaUnitaria,
+                   ingresoBruto: 0,
+                   gananciaTotal: 0,
+                 };
                }
-               agrupadoPorFecha[fechaStr].ventas += ingresoTotalItem;
-               agrupadoPorFecha[fechaStr].ganancia += gananciaTotalItem;
+               agrupadoPorReceta[receta.id].cantidad += item.cantidad;
+               agrupadoPorReceta[receta.id].ingresoBruto += ingresoTotalItem;
+               agrupadoPorReceta[receta.id].gananciaTotal += gananciaTotalItem;
+
+               if (item.ventas && item.ventas.metodo_pago) {
+                  const mp = item.ventas.metodo_pago.toLowerCase();
+                  if (agrupadoPorPago[mp] !== undefined) {
+                     agrupadoPorPago[mp] += ingresoTotalItem;
+                  }
+               }
+
+               if (item.ventas && item.ventas.id) {
+                 ventasUnicas.add(item.ventas.id);
+               }
+
+               if (item.ventas && item.ventas.created_at) {
+                 const fechaObj = new Date(item.ventas.created_at);
+                 const fechaStr = dateFilter === 'hoy' 
+                   ? `${fechaObj.getHours().toString().padStart(2, '0')}:00` 
+                   : fechaObj.toISOString().split('T')[0];
+                   
+                 if (!agrupadoPorFecha[fechaStr]) {
+                   agrupadoPorFecha[fechaStr] = { fecha: fechaStr, ventas: 0, ganancia: 0 };
+                 }
+                 agrupadoPorFecha[fechaStr].ventas += ingresoTotalItem;
+                 agrupadoPorFecha[fechaStr].ganancia += gananciaTotalItem;
+               }
+
+               if (receta.ingredientes && receta.ingredientes.length > 0 && precioVenta > 0) {
+                   receta.ingredientes.forEach(ing => {
+                       if (ing.insumo && ing.insumo.id) {
+                           const costoBase = Number(ing.insumo.costo_unidad_compra) / Number(ing.insumo.factor_conversion);
+                           const costoRealIngrediente = (costoBase / (Number(ing.insumo.porcentaje_rendimiento) / 100)) * Number(ing.cantidad);
+                           const proporcionCosto = costoUnitario > 0 ? (costoRealIngrediente / costoUnitario) : 0;
+                           
+                           const gananciaAportada = gananciaTotalItem * proporcionCosto;
+                           const cantidadUsada = Number(ing.cantidad) * item.cantidad;
+
+                           if (!agrupadoPorInsumo[ing.insumo.id]) {
+                               agrupadoPorInsumo[ing.insumo.id] = {
+                                   id: ing.insumo.id,
+                                   nombre: ing.insumo.nombre,
+                                   unidad_base: ing.insumo.unidad_base,
+                                   gananciaAportada: 0,
+                                   cantidadUsada: 0,
+                                   vecesVendido: 0
+                               };
+                           }
+                           agrupadoPorInsumo[ing.insumo.id].gananciaAportada += gananciaAportada;
+                           agrupadoPorInsumo[ing.insumo.id].cantidadUsada += cantidadUsada;
+                           agrupadoPorInsumo[ing.insumo.id].vecesVendido += item.cantidad;
+                       }
+                   });
+               }
              }
+          });
 
-             // Agrupar por Insumo
-             if (receta.ingredientes && receta.ingredientes.length > 0 && precioVenta > 0) {
-                 receta.ingredientes.forEach(ing => {
-                     if (ing.insumo && ing.insumo.id) {
-                         const costoBase = Number(ing.insumo.costo_unidad_compra) / Number(ing.insumo.factor_conversion);
-                         const costoRealIngrediente = (costoBase / (Number(ing.insumo.porcentaje_rendimiento) / 100)) * Number(ing.cantidad);
-                         const proporcionCosto = costoUnitario > 0 ? (costoRealIngrediente / costoUnitario) : 0;
-                         
-                         const gananciaAportada = gananciaTotalItem * proporcionCosto;
-                         const cantidadUsada = Number(ing.cantidad) * item.cantidad;
+          const insumosList = Object.values(agrupadoPorInsumo);
+          const topInsumoGanancia = insumosList.length > 0 
+              ? insumosList.reduce((max, obj) => obj.gananciaAportada > max.gananciaAportada ? obj : max, insumosList[0])
+              : null;
+              
+          const topInsumoUso = insumosList.length > 0 
+              ? insumosList.reduce((max, obj) => obj.vecesVendido > max.vecesVendido ? obj : max, insumosList[0])
+              : null;
 
-                         if (!agrupadoPorInsumo[ing.insumo.id]) {
-                             agrupadoPorInsumo[ing.insumo.id] = {
-                                 id: ing.insumo.id,
-                                 nombre: ing.insumo.nombre,
-                                 unidad_base: ing.insumo.unidad_base,
-                                 gananciaAportada: 0,
-                                 cantidadUsada: 0,
-                                 vecesVendido: 0
-                             };
-                         }
-                         agrupadoPorInsumo[ing.insumo.id].gananciaAportada += gananciaAportada;
-                         agrupadoPorInsumo[ing.insumo.id].cantidadUsada += cantidadUsada;
-                         agrupadoPorInsumo[ing.insumo.id].vecesVendido += item.cantidad;
-                     }
-                 });
-             }
-           }
-        });
+          const data = Object.values(agrupadoPorReceta);
+          const avgCantidad = data.length > 0 ? ventasTotales / data.length : 0;
 
-        // Obtener Top Insumos
-        const insumosList = Object.values(agrupadoPorInsumo);
-        const topInsumoGanancia = insumosList.length > 0 
-            ? insumosList.reduce((max, obj) => obj.gananciaAportada > max.gananciaAportada ? obj : max, insumosList[0])
-            : null;
+          const dataMatriz = data.map(item => {
+            const margen = (item.gananciaUnitaria / item.precioVenta) * 100;
+            let bcg = 'neutro';
             
-        const topInsumoUso = insumosList.length > 0 
-            ? insumosList.reduce((max, obj) => obj.vecesVendido > max.vecesVendido ? obj : max, insumosList[0])
-            : null;
+            if (margen >= 50 && item.cantidad >= avgCantidad) bcg = 'estrella';
+            else if (margen < 50 && item.cantidad >= avgCantidad) bcg = 'caballito';
+            else if (margen < 50 && item.cantidad < avgCantidad) bcg = 'hueso';
+            
+            return { ...item, margen, bcg };
+          });
 
-        // Generar Array de Recetas y Matriz BCG
-        const data = Object.values(agrupadoPorReceta);
-        const avgCantidad = data.length > 0 ? ventasTotales / data.length : 0;
+          dataMatriz.sort((a, b) => b.gananciaTotal - a.gananciaTotal);
+          const badMargins = dataMatriz.filter(d => d.margen < 30 && d.cantidad > 0);
+          const trendArray = Object.values(agrupadoPorFecha).sort((a, b) => a.fecha.localeCompare(b.fecha));
 
-        const dataMatriz = data.map(item => {
-          const margen = (item.gananciaUnitaria / item.precioVenta) * 100;
-          let bcg = 'neutro';
+          const catData = data
+            .filter(d => d.ingresoBruto > 0)
+            .map(d => ({ name: d.nombre, value: d.ingresoBruto }))
+            .sort((a, b) => b.value - a.value);
           
-          if (margen >= 50 && item.cantidad >= avgCantidad) bcg = 'estrella';
-          else if (margen < 50 && item.cantidad >= avgCantidad) bcg = 'caballito';
-          else if (margen < 50 && item.cantidad < avgCantidad) bcg = 'hueso';
-          
-          return { ...item, margen, bcg };
-        });
+          let finalCatData = catData;
+          if (catData.length > 5) {
+            const top5 = catData.slice(0, 5);
+            const otros = catData.slice(5).reduce((acc, curr) => acc + curr.value, 0);
+            if (otros > 0) top5.push({ name: 'Otros', value: otros });
+            finalCatData = top5;
+          }
 
-        // Ordenar por ganancia total descendente
-        dataMatriz.sort((a, b) => b.gananciaTotal - a.gananciaTotal);
+          const metodosPagoFinal = [
+            { name: 'Efectivo', value: agrupadoPorPago.efectivo },
+            { name: 'Tarjeta', value: agrupadoPorPago.tarjeta },
+            { name: 'Transf.', value: agrupadoPorPago.transferencia }
+          ].filter(m => m.value > 0);
 
-        // Identificar Alertas (<30% margen)
-        const badMargins = dataMatriz.filter(d => d.margen < 30 && d.cantidad > 0);
+          setReportData(dataMatriz);
+          setAlertas(badMargins);
+          setTrendData(trendArray);
+          setCategoryData(finalCatData);
+          setMetodosPagoData(metodosPagoFinal);
 
-        // Formatear array de tendencias
-        const trendArray = Object.values(agrupadoPorFecha).sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-        // Preparar datos para el gráfico de pastel (Desglose por Platillo)
-        const catData = data
-          .filter(d => d.ingresoBruto > 0)
-          .map(d => ({ name: d.nombre, value: d.ingresoBruto }))
-          .sort((a, b) => b.value - a.value);
-        
-        let finalCatData = catData;
-        if (catData.length > 5) {
-          const top5 = catData.slice(0, 5);
-          const otros = catData.slice(5).reduce((acc, curr) => acc + curr.value, 0);
-          if (otros > 0) top5.push({ name: 'Otros', value: otros });
-          finalCatData = top5;
+          setTotals({
+            ventasTotales,
+            ingresoBruto,
+            gananciaNeta,
+            perdidaMermas,
+            rentabilidadPromedio: ingresoBruto > 0 ? (gananciaNeta / ingresoBruto) * 100 : 0,
+            topInsumoGanancia,
+            topInsumoUso
+          });
         }
-
-        const metodosPagoFinal = [
-          { name: 'Efectivo', value: agrupadoPorPago.efectivo },
-          { name: 'Tarjeta', value: agrupadoPorPago.tarjeta },
-          { name: 'Transf.', value: agrupadoPorPago.transferencia }
-        ].filter(m => m.value > 0);
-
-        setReportData(dataMatriz);
-        setAlertas(badMargins);
-        setTrendData(trendArray);
-        setCategoryData(finalCatData);
-        setMetodosPagoData(metodosPagoFinal);
-
-        const numeroVentas = ventasUnicas.size;
-        const ticketPromedio = numeroVentas > 0 ? ingresoBruto / numeroVentas : 0;
-        const rentabilidadPromedio = ingresoBruto > 0 ? (gananciaNeta / ingresoBruto) * 100 : 0;
-
-        setTotals({
-          ventasTotales,
-          ingresoBruto,
-          gananciaNeta,
-          rentabilidadPromedio,
-          topInsumoGanancia,
-          topInsumoUso
-        });
 
       } catch (error) {
         console.error('Error cargando Informes:', error);
@@ -261,11 +258,11 @@ export const Informes = () => {
     };
 
     loadReportData();
-  }, [dateFilter]);
+  }, [dateFilter, currentRestaurant]);
 
   const COLORS_BAR = ['#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
   const COLORS_PIE = ['#8b5cf6', '#d946ef', '#f43f5e', '#f97316', '#eab308', '#94a3b8'];
-  const COLORS_PAY = ['#10b981', '#3b82f6', '#8b5cf6']; // Efectivo (verde), Tarjeta (azul), Transf (morado)
+  const COLORS_PAY = ['#10b981', '#3b82f6', '#8b5cf6'];
 
   const renderBCG = (bcg) => {
     if (bcg === 'estrella') return <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded-md ml-2 uppercase"><Star size={10} fill="currentColor" /> Estrella</span>;
@@ -287,7 +284,6 @@ export const Informes = () => {
     >
       <div className="flex-1 overflow-y-auto p-8 lg:p-10">
         
-        {/* Cabecera y Filtros */}
         <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Informes Estratégicos</h1>
