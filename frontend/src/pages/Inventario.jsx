@@ -14,7 +14,7 @@ import { LoadingSpinner } from '../components/ui/Loading';
 import { supabase } from '../services/api/client';
 
 export const Inventario = () => {
-  const { session } = useAuth();
+  const { session, currentRestaurant } = useAuth();
   const [insumos, setInsumos] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [cajaActiva, setCajaActiva] = useState(null);
@@ -39,23 +39,17 @@ export const Inventario = () => {
       setInsumos(insumosData || []);
       
       if (session?.user?.id) {
-         const { data: userData } = await supabase
-          .from('usuarios')
-          .select('restaurante_id')
-          .eq('id', session.user.id)
-          .single();
-          
-         if (userData?.restaurante_id) {
-            const provsData = await comprasService.getProveedores(userData.restaurante_id);
+         if (currentRestaurant?.id) {
+            const provsData = await comprasService.getProveedores(currentRestaurant?.id);
             setProveedores(provsData || []);
             
-            const caja = await cajaService.getCajaAbierta(userData.restaurante_id);
+            const caja = await cajaService.getCajaAbierta(currentRestaurant?.id);
             setCajaActiva(caja);
          }
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
-      setErrorCarga(error.message || 'Error desconocido al cargar datos');
+      setErrorCarga(import.meta.env.DEV ? error.message : 'Error inesperado al cargar el inventario');
     } finally {
       setLoading(false);
     }
@@ -89,15 +83,9 @@ export const Inventario = () => {
   // Paso 1: Crear Insumo
   const handleInsumoSubmit = async (formData) => {
     try {
-      const { data: userData } = await supabase
-        .from('usuarios')
-        .select('restaurante_id')
-        .eq('id', session.user.id)
-        .single();
-
       const insumoData = {
         ...formData,
-        restaurante_id: userData.restaurante_id
+        restaurante_id: currentRestaurant?.id
       };
 
       if (editingInsumo) {
@@ -126,11 +114,10 @@ export const Inventario = () => {
   // Acción en Paso 2: Crear proveedor al vuelo
   const handleAddProveedor = async (nombre) => {
       try {
-          const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', session.user.id).single();
-          const newProv = await comprasService.createProveedor(userData.restaurante_id, { nombre: nombre.trim() });
+          const newProv = await comprasService.createProveedor(currentRestaurant?.id, { nombre: nombre.trim() });
           
           // Actualizamos la lista local
-          const provsData = await comprasService.getProveedores(userData.restaurante_id);
+          const provsData = await comprasService.getProveedores(currentRestaurant?.id);
           setProveedores(provsData || []);
           
           toast.success('Proveedor creado');
@@ -142,19 +129,19 @@ export const Inventario = () => {
   };
 
   // Paso 2: Registrar compra inicial
-  const handleCompraInicialSubmit = async ({ proveedor_id, cantidad, costo_total, pagarDeCaja }) => {
+  const handleCompraInicialSubmit = async ({ proveedor_id, cantidad, costo_total, fecha_caducidad, pagarDeCaja }) => {
       try {
-          const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', session.user.id).single();
           const detalles = [{
               insumo_id: createdInsumo.id,
               cantidad: cantidad,
-              precio_unitario: costo_total / cantidad
+              precio_unitario: costo_total / cantidad,
+              fecha_caducidad: fecha_caducidad
           }];
           
           const estadoCompra = (pagarDeCaja && cajaActiva) ? 'pagada' : 'pendiente';
           const cajaId = (pagarDeCaja && cajaActiva) ? cajaActiva.id : null;
           
-          await comprasService.registrarCompra(userData.restaurante_id, proveedor_id, estadoCompra, detalles, cajaId);
+          await comprasService.registrarCompra(currentRestaurant?.id, proveedor_id, estadoCompra, detalles, cajaId);
           
           toast.success('Compra inicial registrada');
           handleCloseModal();

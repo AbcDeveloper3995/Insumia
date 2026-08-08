@@ -93,6 +93,19 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase, onVi
           </div>
         </div>
 
+        {/* Tip (Lotes) */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-start space-x-4 mt-6">
+          <div className="p-2 bg-rose-50 text-rose-500 rounded-lg shrink-0">
+            <Package size={24} />
+          </div>
+          <div>
+            <h4 className="text-slate-800 font-bold">Nuevo: Rastreo por Lotes y Caducidad</h4>
+            <p className="text-slate-500 text-sm mt-1">
+              Al registrar una compra, puedes ingresar la fecha de caducidad. Insumia creará lotes separados y, al vender, descontará automáticamente usando el método FIFO (los que caducan primero se gastan primero). ¡Incluso verás alertas cuando estén por vencer!
+            </p>
+          </div>
+        </div>
+
       </div>
     );
   }

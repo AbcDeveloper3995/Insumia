@@ -39,9 +39,8 @@ export const Dashboard = () => {
         const user = sessionRes.data?.session?.user;
         let comprasData = null;
         if (user) {
-          const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', user.id).single();
-          if (userData?.restaurante_id) {
-            const { data } = await supabase.from('compras').select('total').eq('restaurante_id', userData.restaurante_id);
+          if (currentRestaurant?.id) {
+            const { data } = await supabase.from('compras').select('total').eq('restaurante_id', currentRestaurant?.id);
             comprasData = data;
           }
         }
@@ -68,7 +67,7 @@ export const Dashboard = () => {
         productosData.forEach(item => {
            const receta = recetasActivas.find(r => r.id === item.receta_id);
            if (receta) {
-             const costoUnitario = Number(receta.costo_total) || 0;
+             const costoUnitario = (Number(receta.costo_total) || 0) / (Number(receta.rendimiento) || 1);
              const precioVenta = Number(receta.precio_venta) || 0;
              const gananciaUnitaria = precioVenta - costoUnitario;
              gananciaTotal += gananciaUnitaria * item.cantidad;
@@ -97,11 +96,11 @@ export const Dashboard = () => {
 
         // 6. Cargar Lotes para Alertas de Caducidad
         let alertasCaducidad = [];
-        if (userData?.restaurante_id) {
+        if (currentRestaurant?.id) {
           const { data: lotes } = await supabase
             .from('lotes_insumo')
             .select('id, cantidad_actual, fecha_caducidad, insumos(nombre, dias_alerta_caducidad, unidad_base)')
-            .eq('restaurante_id', userData.restaurante_id)
+            .eq('restaurante_id', currentRestaurant?.id)
             .gt('cantidad_actual', 0)
             .not('fecha_caducidad', 'is', null);
 

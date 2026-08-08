@@ -8,6 +8,7 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
   
   const [cantidad, setCantidad] = useState('');
   const [costoTotal, setCostoTotal] = useState('');
+  const [fechaCaducidad, setFechaCaducidad] = useState('');
   const [pagarDeCaja, setPagarDeCaja] = useState(false);
 
   const handleProviderSelect = (e) => {
@@ -44,6 +45,7 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
       proveedor_id: proveedorId,
       cantidad: Number(cantidad),
       costo_total: Number(costoTotal),
+      fecha_caducidad: fechaCaducidad || null,
       pagarDeCaja
     });
   };
@@ -107,7 +109,7 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
               Cantidad comprada
@@ -130,7 +132,7 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
           
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              Costo total lote ($)
+              Costo total ($)
             </label>
             <input
               type="number"
@@ -140,6 +142,18 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
               onChange={e => setCostoTotal(e.target.value)}
               placeholder="Ej. 250.00"
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+
+          <div className="col-span-2 md:col-span-1">
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              Caducidad (Opcional)
+            </label>
+            <input
+              type="date"
+              value={fechaCaducidad}
+              onChange={e => setFechaCaducidad(e.target.value)}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-700"
             />
           </div>
         </div>

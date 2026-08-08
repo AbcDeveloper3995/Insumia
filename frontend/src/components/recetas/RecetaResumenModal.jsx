@@ -1,31 +1,55 @@
 import { motion } from 'framer-motion';
 import { X, PieChart, TrendingUp, ChefHat, DollarSign, Calculator, Info, Lightbulb } from 'lucide-react';
 
-export const RecetaResumenModal = ({ receta, insumos, onClose }) => {
+export const RecetaResumenModal = ({ receta, insumos, recetas = [], onClose }) => {
   if (!receta) return null;
 
   const precioVenta = Number(receta.precio_venta) || 0;
   
-  // Calcular el costo real reconstruyéndolo desde los insumos actuales
+  // Calcular el costo real reconstruyéndolo desde los insumos y subrecetas actuales
   let costoTotalCalculado = 0;
   const desgloseIngredientes = (receta.ingredientes || []).map(ing => {
-    const insumoRef = insumos.find(i => i.id === ing.insumo_id);
-    if (!insumoRef) return null;
+    if (ing.insumo_id) {
+      const insumoRef = insumos.find(i => i.id === ing.insumo_id);
+      if (!insumoRef) return null;
 
-    const costoBase = Number(insumoRef.costo_unidad_compra) / Number(insumoRef.factor_conversion);
-    const costoReal = costoBase / (Number(insumoRef.porcentaje_rendimiento) / 100);
-    const costoAportado = costoReal * Number(ing.cantidad_uso);
+      const costoBase = Number(insumoRef.costo_unidad_compra) / Number(insumoRef.factor_conversion);
+      const costoReal = costoBase / (Number(insumoRef.porcentaje_rendimiento) / 100);
+      const costoAportado = costoReal * Number(ing.cantidad_uso || ing.cantidad);
 
-    costoTotalCalculado += costoAportado;
+      costoTotalCalculado += costoAportado;
 
-    return {
-      insumo: insumoRef,
-      cantidad: ing.cantidad_uso,
-      costo: costoAportado
-    };
+      return {
+        insumo: insumoRef,
+        isSubreceta: false,
+        cantidad: ing.cantidad_uso || ing.cantidad,
+        costo: costoAportado
+      };
+    } else if (ing.subreceta_id) {
+      const subRef = recetas.find(r => r.id === ing.subreceta_id);
+      if (!subRef) return null;
+
+      const rendimientoSub = Number(subRef.rendimiento) || 1;
+      const costoUnitarioSub = (Number(subRef.costo_total) || 0) / rendimientoSub;
+      const costoAportado = costoUnitarioSub * Number(ing.cantidad_uso || ing.cantidad);
+
+      costoTotalCalculado += costoAportado;
+
+      return {
+        insumo: { nombre: subRef.nombre, unidad_base: 'unid.' },
+        isSubreceta: true,
+        cantidad: ing.cantidad_uso || ing.cantidad,
+        costo: costoAportado
+      };
+    }
+    return null;
   }).filter(Boolean);
 
-  const gananciaTotal = precioVenta - costoTotalCalculado;
+  const isSubreceta = receta.tipo === 'subreceta';
+  const rendimiento = Number(receta.rendimiento) || 1;
+  const costoUnitarioCalculado = costoTotalCalculado / rendimiento;
+
+  const gananciaTotal = precioVenta - costoUnitarioCalculado;
   const margenTotal = precioVenta > 0 ? (gananciaTotal / precioVenta) * 100 : 0;
   const isRentable = margenTotal >= 50; // Regla del 50%
 
@@ -75,34 +99,43 @@ export const RecetaResumenModal = ({ receta, insumos, onClose }) => {
         <div className="flex-1 overflow-y-auto p-8">
             
             {/* KPIs Globales */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className={`grid grid-cols-1 md:grid-cols-${(!isSubreceta || precioVenta > 0) ? '4' : '1'} gap-4 mb-8`}>
                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center gap-2 mb-2 text-slate-500">
-                      <Calculator size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Costo Total</span>
+                  <div className="flex items-center justify-between mb-2 text-slate-500">
+                      <div className="flex items-center gap-2">
+                          <Calculator size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">{isSubreceta ? 'Costo 1 Unid' : 'Costo Total'}</span>
+                      </div>
+                      {isSubreceta && (
+                          <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold" title="Costo total de producir el lote">Lote: ${costoTotalCalculado.toFixed(2)}</span>
+                      )}
                   </div>
-                  <h3 className="text-2xl font-black text-rose-500">${costoTotalCalculado.toFixed(2)}</h3>
+                  <h3 className="text-2xl font-black text-rose-500">${costoUnitarioCalculado.toFixed(2)}</h3>
                </div>
 
-               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center gap-2 mb-2 text-slate-500">
-                      <DollarSign size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Precio Venta</span>
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-800">${precioVenta.toFixed(2)}</h3>
-               </div>
+               {(!isSubreceta || precioVenta > 0) && (
+                 <>
+                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                      <div className="flex items-center gap-2 mb-2 text-slate-500">
+                          <DollarSign size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Precio Venta</span>
+                      </div>
+                      <h3 className="text-2xl font-black text-slate-800">${precioVenta.toFixed(2)}</h3>
+                   </div>
 
-               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center gap-2 mb-2 text-slate-500">
-                      <TrendingUp size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Ganancia</span>
-                  </div>
-                  <h3 className="text-2xl font-black text-emerald-600">${gananciaTotal.toFixed(2)}</h3>
-               </div>
+                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                      <div className="flex items-center gap-2 mb-2 text-slate-500">
+                          <TrendingUp size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Ganancia</span>
+                      </div>
+                      <h3 className="text-2xl font-black text-emerald-600">${gananciaTotal.toFixed(2)}</h3>
+                   </div>
 
-               <div className={`p-5 rounded-2xl border shadow-sm flex flex-col justify-between ${isRentable ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-                  <div className={`flex items-center gap-2 mb-2 ${isRentable ? 'text-emerald-700' : 'text-red-700'}`}>
-                      <PieChart size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Margen (FC)</span>
-                  </div>
-                  <h3 className={`text-2xl font-black ${isRentable ? 'text-emerald-700' : 'text-red-700'}`}>{margenTotal.toFixed(1)}%</h3>
-               </div>
+                   <div className={`p-5 rounded-2xl border shadow-sm flex flex-col justify-between ${isRentable ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                      <div className={`flex items-center gap-2 mb-2 ${isRentable ? 'text-emerald-700' : 'text-red-700'}`}>
+                          <PieChart size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Margen (FC)</span>
+                      </div>
+                      <h3 className={`text-2xl font-black ${isRentable ? 'text-emerald-700' : 'text-red-700'}`}>{margenTotal.toFixed(1)}%</h3>
+                   </div>
+                 </>
+               )}
             </div>
 
             {/* Lista Bento de Insumos */}
@@ -120,7 +153,10 @@ export const RecetaResumenModal = ({ receta, insumos, onClose }) => {
                             
                             {/* Insumo Info */}
                             <div className="flex-1 w-full">
-                                <h4 className="font-bold text-slate-800 mb-1">{item.insumo.nombre}</h4>
+                                <h4 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
+                                  {item.insumo.nombre}
+                                  {item.isSubreceta && <span className="text-[9px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest">Subreceta</span>}
+                                </h4>
                                 <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
                                     <span className="bg-slate-100 px-2 py-1 rounded-md">Usa: {item.cantidad} {item.insumo.unidad_base}</span>
                                 </div>
@@ -140,17 +176,19 @@ export const RecetaResumenModal = ({ receta, insumos, onClose }) => {
                             </div>
 
                             {/* Contribución a Ganancia */}
-                            <div className="w-full md:w-48 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
-                                <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest mb-1">Ganancia Generada</p>
-                                <div className="flex items-end justify-between">
-                                    <span className="text-lg font-black text-emerald-600">${gananciaAportada.toFixed(2)}</span>
-                                    <span className="text-xs font-bold text-emerald-500 mb-1">aporta</span>
+                            {(!isSubreceta || precioVenta > 0) && (
+                                <div className="w-full md:w-48 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                                    <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest mb-1">Ganancia Generada</p>
+                                    <div className="flex items-end justify-between">
+                                        <span className="text-lg font-black text-emerald-600">${gananciaAportada.toFixed(2)}</span>
+                                        <span className="text-xs font-bold text-emerald-500 mb-1">aporta</span>
+                                    </div>
+                                    {/* Progress bar */}
+                                    <div className="w-full bg-emerald-200/50 rounded-full h-1.5 mt-2 overflow-hidden">
+                                        <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.min(participacionCosto * 100, 100)}%` }}></div>
+                                    </div>
                                 </div>
-                                {/* Progress bar */}
-                                <div className="w-full bg-emerald-200/50 rounded-full h-1.5 mt-2 overflow-hidden">
-                                    <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.min(participacionCosto * 100, 100)}%` }}></div>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     );
                 })}

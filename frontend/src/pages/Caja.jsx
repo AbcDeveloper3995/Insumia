@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
 
 export const Caja = () => {
-  const { session } = useAuth();
+  const { session, currentRestaurant } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [cajaActiva, setCajaActiva] = useState(null);
@@ -27,13 +27,7 @@ export const Caja = () => {
       setLoading(true);
       if (!session?.user?.id) return;
       
-      const { data: userData } = await supabase
-        .from('usuarios')
-        .select('restaurante_id')
-        .eq('id', session.user.id)
-        .single();
-        
-      const restauranteId = userData.restaurante_id;
+      const restauranteId = currentRestaurant?.id;
       if (!restauranteId) return;
 
       const caja = await cajaService.getCajaAbierta(restauranteId);
@@ -79,12 +73,7 @@ export const Caja = () => {
     e.preventDefault();
     setErrorMsg('');
     try {
-      const { data: userData } = await supabase
-        .from('usuarios')
-        .select('restaurante_id')
-        .eq('id', session.user.id)
-        .single();
-      const restauranteId = userData.restaurante_id;
+      const restauranteId = currentRestaurant?.id;
 
       if (showModal === 'abrir') {
         await cajaService.abrirCaja(restauranteId, Number(formData.monto), formData.concepto);

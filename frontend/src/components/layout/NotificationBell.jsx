@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { Bell, AlertTriangle, AlertCircle, Building, X, Package, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -7,6 +8,7 @@ import { insumosService } from '../../services/api/insumos';
 import { recetasService } from '../../services/api/recetas';
 
 export const NotificationBell = ({ isSidebarExpanded }) => {
+  const { currentRestaurant } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [alertas, setAlertas] = useState({
@@ -25,8 +27,7 @@ export const NotificationBell = ({ isSidebarExpanded }) => {
       const user = sessionRes.data?.session?.user;
       if (!user) return;
       
-      const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', user.id).single();
-      const restauranteId = userData.restaurante_id;
+      const restauranteId = currentRestaurant?.id;
 
       // 1. Alertas de Stock
       const insumos = await insumosService.getInsumos();
@@ -35,7 +36,7 @@ export const NotificationBell = ({ isSidebarExpanded }) => {
       // 2. Alertas de Recetas (Margen < 50%)
       const recetas = await recetasService.getRecetas();
       const recetasAlerts = (recetas || []).filter(r => {
-        const costo = Number(r.costo_total) || 0;
+        const costo = (Number(r.costo_total) || 0) / (Number(r.rendimiento) || 1);
         const precio = Number(r.precio_venta) || 0;
         if (precio <= 0 || r.es_subreceta) return false;
         const margen = ((precio - costo) / precio) * 100;

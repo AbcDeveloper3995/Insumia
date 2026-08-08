@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, 
@@ -27,6 +28,7 @@ import {
 } from 'recharts';
 
 export const Informes = () => {
+  const { currentRestaurant } = useAuth();
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState([]);
   const [trendData, setTrendData] = useState([]);
@@ -67,8 +69,7 @@ export const Informes = () => {
         const sessionRes = await supabase.auth.getSession();
         const user = sessionRes.data?.session?.user;
         if (!user) return;
-        const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', user.id).single();
-        const restauranteId = userData.restaurante_id;
+        const restauranteId = currentRestaurant?.id;
 
         // Cargar recetas activas
         const recetas = await recetasService.getRecetas();

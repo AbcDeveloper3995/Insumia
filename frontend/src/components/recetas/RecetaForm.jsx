@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Plus, Trash2, Calculator, Info } from 'lucide-react';
 import { insumosService } from '../../services/api/insumos';
+import { recetasService } from '../../services/api/recetas';
 
 export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }) => {
   const [insumos, setInsumos] = useState([]);
+  const [subrecetas, setSubrecetas] = useState([]);
   const [loadingDatos, setLoadingDatos] = useState(true);
   const [costoCalculado, setCostoCalculado] = useState(0);
 
@@ -12,11 +14,12 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
     defaultValues: defaultValues || {
       nombre: '',
       tipo: 'platillo',
+      rendimiento: 1,
       precio_venta: '',
       costo_total: 0,
       ingredientes: []
     },
-    mode: 'onBlur' // Dispara validación y updates al perder el foco
+    mode: 'onBlur'
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -24,60 +27,82 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
     name: 'ingredientes'
   });
 
-  // Observamos todo para asegurar renderizados
   const formValues = watch();
   const watchIngredientes = formValues.ingredientes || [];
   const watchPrecioVenta = Number(formValues.precio_venta) || 0;
+  const watchRendimiento = Number(formValues.rendimiento) || 1;
+
+  const watchTipo = formValues.tipo || 'platillo';
 
   useEffect(() => {
-    const fetchInsumos = async () => {
+    if (watchTipo === 'subreceta') {
+      setValue('precio_venta', 0);
+    }
+  }, [watchTipo, setValue]);
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
         setLoadingDatos(true);
-        const insumosData = await insumosService.getInsumos();
+        const [insumosData, recetasData] = await Promise.all([
+          insumosService.getInsumos(),
+          recetasService.getRecetas()
+        ]);
         setInsumos(insumosData || []);
+        
+        // Excluimos la receta actual si estamos editando para evitar recursividad infinita
+        const currentId = defaultValues?.id;
+        const sub = (recetasData || []).filter(r => r.tipo === 'subreceta' && r.id !== currentId);
+        setSubrecetas(sub);
       } catch (error) {
-        console.error('Error cargando insumos:', error);
+        console.error('Error cargando datos:', error);
       } finally {
         setLoadingDatos(false);
       }
     };
-    fetchInsumos();
-  }, []);
+    fetchData();
+  }, [defaultValues?.id]);
 
-  // Función para calcular costo de un solo ingrediente
-  const calcularCostoIngrediente = (insumoId, cantidad) => {
-    if (!insumoId || !cantidad || !insumos.length) return 0;
-    const insumoRef = insumos.find(i => i.id === insumoId);
-    if (!insumoRef) return 0;
+  const calcularCostoItem = (itemId, cantidad) => {
+    if (!itemId || !cantidad) return 0;
     
-    const costoBase = Number(insumoRef.costo_unidad_compra) / Number(insumoRef.factor_conversion);
-    const costoReal = costoBase / (Number(insumoRef.porcentaje_rendimiento) / 100);
-    return costoReal * Number(cantidad);
+    if (itemId.startsWith('subreceta_')) {
+      const id = itemId.replace('subreceta_', '');
+      const sub = subrecetas.find(s => s.id === id);
+      if (!sub) return 0;
+      const costoUnitario = Number(sub.costo_total) / (Number(sub.rendimiento) || 1);
+      return costoUnitario * Number(cantidad);
+    } else {
+      const id = itemId.replace('insumo_', '');
+      const insumoRef = insumos.find(i => i.id === id);
+      if (!insumoRef) return 0;
+      const costoBase = Number(insumoRef.costo_unidad_compra) / Number(insumoRef.factor_conversion);
+      const costoReal = costoBase / (Number(insumoRef.porcentaje_rendimiento) / 100);
+      return costoReal * Number(cantidad);
+    }
   };
 
-  // Función principal de recálculo (ejecutada en onBlur y useEffect)
   const recalcularCostoTotal = () => {
-    if (!insumos.length) return;
+    if (!insumos.length && !subrecetas.length) return;
     
-    // Obtenemos los valores frescos directamente
     const ingredientesActuales = getValues('ingredientes') || [];
     let costoTotal = 0;
     
     ingredientesActuales.forEach(ing => {
-      costoTotal += calcularCostoIngrediente(ing.insumo_id, ing.cantidad_uso);
+      costoTotal += calcularCostoItem(ing.item_id, ing.cantidad_uso);
     });
 
     setCostoCalculado(costoTotal);
     setValue('costo_total', costoTotal);
   };
 
-  // Motor de Cálculo automático ante cambios grandes
   useEffect(() => {
     recalcularCostoTotal();
-  }, [watchIngredientes.length, insumos, setValue]); 
-  // Nota: solo dependemos del length aquí para evitar ciclos, el recálculo fino se hace en onBlur
+  }, [watchIngredientes.length, insumos, subrecetas, setValue]); 
 
-  const margen = watchPrecioVenta > 0 ? ((watchPrecioVenta - costoCalculado) / watchPrecioVenta) * 100 : 0;
+  // Calculamos el costo unitario basado en el rendimiento
+  const costoUnitarioCalculado = costoCalculado / watchRendimiento;
+  const margen = watchPrecioVenta > 0 ? ((watchPrecioVenta - costoUnitarioCalculado) / watchPrecioVenta) * 100 : 0;
 
   if (loadingDatos) {
     return <div className="p-8 text-center text-slate-500">Cargando constructor...</div>;
@@ -88,14 +113,14 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
     formValues.precio_venta !== '' &&
     formValues.precio_venta !== undefined &&
     watchIngredientes.length > 0 &&
-    watchIngredientes.every(ing => ing.insumo_id && Number(ing.cantidad_uso) > 0)
+    watchIngredientes.every(ing => ing.item_id && Number(ing.cantidad_uso) > 0)
   );
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Platillo</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
           <input
             {...register('nombre', { required: 'Requerido' })}
             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -114,14 +139,36 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
             <option value="subreceta">Sub-receta (Preparación Base)</option>
           </select>
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Rendimiento (Lote)</label>
+          <div className="relative">
+            <input
+              type="number"
+              step="1"
+              min="1"
+              {...register('rendimiento', { 
+                required: 'Requerido', 
+                min: { value: 1, message: 'Min 1' },
+                onBlur: recalcularCostoTotal
+              })}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none pr-14"
+              placeholder="1"
+            />
+            <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-bold uppercase">
+              Unid.
+            </span>
+          </div>
+          {errors.rendimiento && <span className="text-red-500 text-xs">{errors.rendimiento.message}</span>}
+        </div>
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-slate-800">Ingredientes</h3>
+          <h3 className="font-bold text-slate-800">Ingredientes de la Receta</h3>
           <button
             type="button"
-            onClick={() => append({ insumo_id: '', cantidad_uso: 0 })}
+            onClick={() => append({ item_id: '', cantidad_uso: 0 })}
             className="flex items-center space-x-1 px-3 py-1.5 bg-white border border-slate-300 text-blue-600 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium cursor-pointer"
           >
             <Plus size={16} />
@@ -134,31 +181,52 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
             No has agregado ningún ingrediente.
           </div>
         ) : (
-          <div className="space-y-4 max-h-[22rem] overflow-y-auto pr-2">
+          <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
             {fields.map((field, index) => {
-              const currentInsumoId = watchIngredientes[index]?.insumo_id;
+              const currentItemId = watchIngredientes[index]?.item_id;
               const currentCantidad = watchIngredientes[index]?.cantidad_uso;
-              const selectedInsumo = insumos.find(i => i.id === currentInsumoId);
               
-              const costoDesglose = calcularCostoIngrediente(currentInsumoId, currentCantidad);
+              let unidadVisual = '-';
+              if (currentItemId?.startsWith('insumo_')) {
+                 const id = currentItemId.replace('insumo_', '');
+                 const ins = insumos.find(i => i.id === id);
+                 if (ins) unidadVisual = ins.unidad_base;
+              } else if (currentItemId?.startsWith('subreceta_')) {
+                 unidadVisual = 'unid.';
+              }
+              
+              const costoDesglose = calcularCostoItem(currentItemId, currentCantidad);
 
               return (
                 <div key={field.id} className="bg-white p-4 border border-slate-200 rounded-lg shadow-sm">
                   <div className="flex items-start space-x-3 mb-2">
                     <div className="flex-1">
                       <select
-                        {...register(`ingredientes.${index}.insumo_id`, { 
+                        {...register(`ingredientes.${index}.item_id`, { 
                           required: true,
                           onChange: recalcularCostoTotal 
                         })}
                         className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white"
                       >
-                        <option value="">Selecciona un insumo...</option>
-                        {insumos.map(insumo => (
-                          <option key={insumo.id} value={insumo.id}>
-                            {insumo.nombre} (usa {insumo.unidad_base})
-                          </option>
-                        ))}
+                        <option value="">Selecciona un ingrediente...</option>
+                        {insumos.length > 0 && (
+                          <optgroup label="Insumos Crudos">
+                            {insumos.map(insumo => (
+                              <option key={`insumo_${insumo.id}`} value={`insumo_${insumo.id}`}>
+                                {insumo.nombre} (usa {insumo.unidad_base})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {subrecetas.length > 0 && (
+                          <optgroup label="Subrecetas (Lotes/Preparaciones)">
+                            {subrecetas.map(sub => (
+                              <option key={`subreceta_${sub.id}`} value={`subreceta_${sub.id}`}>
+                                {sub.nombre} (Produce {sub.rendimiento} u.)
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     </div>
                     
@@ -172,10 +240,10 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                           min: 0.01,
                           onBlur: recalcularCostoTotal
                         })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm pr-10"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm pr-12"
                       />
                       <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">
-                        {selectedInsumo ? selectedInsumo.unidad_base : '-'}
+                        {unidadVisual}
                       </span>
                     </div>
 
@@ -183,7 +251,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                       type="button"
                       onClick={() => {
                         remove(index);
-                        setTimeout(recalcularCostoTotal, 50); // Recalcular después de que react-hook-form elimine el campo
+                        setTimeout(recalcularCostoTotal, 50); 
                       }}
                       className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors cursor-pointer shrink-0"
                     >
@@ -191,15 +259,16 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                     </button>
                   </div>
                   
-                  {/* Desglose visual del costo por ingrediente */}
-                  {selectedInsumo && (
+                  {currentItemId && (
                     <div className="flex items-center text-xs justify-end pr-12">
                       <span className="text-slate-500 mr-2 flex items-center gap-1">
-                          Costo (inc. merma):
+                          Costo Aportado:
                           <div className="relative flex items-center group/tooltip">
                             <Info size={12} className="text-slate-400 hover:text-blue-500 cursor-help" />
-                            <div className="absolute bottom-full right-0 mb-1.5 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center pointer-events-none shadow-lg normal-case font-normal leading-tight">
-                                Este costo ya asume el porcentaje de desperdicio configurado en el insumo.
+                            <div className="absolute bottom-full right-0 mb-1.5 w-64 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] text-left pointer-events-none shadow-lg normal-case font-normal leading-tight">
+                                {currentItemId.startsWith('subreceta_') 
+                                  ? 'Cálculo: (Costo Total de la Subreceta ÷ Su Rendimiento) × Cantidad usada.'
+                                  : 'Cálculo: (Costo Base ÷ % Rendimiento Mermas) × Cantidad usada. (Ya asume el costo de la merma).'}
                             </div>
                           </div>
                       </span>
@@ -219,40 +288,80 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
       <div className="bg-slate-800 rounded-xl shadow-inner p-5 text-white mb-6">
         <h2 className="flex items-center text-sm font-bold mb-4 text-slate-200">
           <Calculator size={16} className="mr-2" />
-          Análisis de Costos (Food Cost)
+          Análisis de Costos y Rentabilidad
         </h2>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           <div>
-            <p className="text-slate-400 text-xs mb-1">Costo Total</p>
-            <p className="text-2xl font-bold text-rose-400">${costoCalculado.toFixed(2)}</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-slate-400 text-xs">Costo Total (Lote)</p>
+              <div className="relative flex items-center group/tooltip">
+                <Info size={12} className="text-slate-500 hover:text-slate-300 cursor-help transition-colors" />
+                <div className="absolute bottom-full left-0 mb-1.5 w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] text-center pointer-events-none shadow-lg normal-case font-normal leading-tight">
+                    Costo de todos los ingredientes sumados (para fabricar la preparación completa).
+                </div>
+              </div>
+            </div>
+            <p className="text-xl font-bold text-slate-200">${costoCalculado.toFixed(2)}</p>
           </div>
 
           <div>
-            <p className="text-slate-400 text-xs mb-1">Precio de Venta</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-slate-400 text-xs">Costo Unitario</p>
+              <div className="relative flex items-center group/tooltip">
+                <Info size={12} className="text-slate-500 hover:text-slate-300 cursor-help transition-colors" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] text-center pointer-events-none shadow-lg normal-case font-normal leading-tight">
+                    Costo exacto para fabricar 1 sola unidad (Costo Total ÷ {watchRendimiento}). Este es tu valor base.
+                </div>
+              </div>
+            </div>
+            <p className="text-xl font-bold text-rose-400">${costoUnitarioCalculado.toFixed(2)}</p>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-slate-400 text-xs">Precio de Venta</p>
+              <div className="relative flex items-center group/tooltip">
+                <Info size={12} className="text-slate-500 hover:text-slate-300 cursor-help transition-colors" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] text-center pointer-events-none shadow-lg normal-case font-normal leading-tight">
+                    El precio al que venderás 1 unidad. Te sugerimos multiplicarlo por 3 (Costo × 3) para garantizar un margen saludable (~66%) que cubra tus gastos operativos y deje ganancia.
+                </div>
+              </div>
+            </div>
             <div className="relative">
               <span className="absolute left-2 top-1 text-slate-400 font-bold">$</span>
               <input
                 type="number"
                 step="0.5"
+                readOnly={watchTipo === 'subreceta'}
                 {...register('precio_venta', { required: 'Requerido', min: { value: 0, message: 'Min 0' } })}
-                className="w-full pl-6 pr-2 py-1 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-white text-lg font-bold"
+                className={`w-full pl-6 pr-2 py-1 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-white text-lg font-bold ${watchTipo === 'subreceta' ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
             </div>
             {errors.precio_venta && <span className="text-red-400 text-xs mt-1 block">{errors.precio_venta.message}</span>}
+            {watchTipo !== 'subreceta' && (
+              <div 
+                  className="text-[10px] font-bold text-emerald-400/80 mt-1.5 cursor-pointer hover:text-emerald-400 transition-colors flex justify-between"
+                  onClick={() => setValue('precio_venta', (costoUnitarioCalculado * 3).toFixed(2), { shouldValidate: true })}
+                  title="Haz clic para aplicar el precio sugerido automáticamente"
+              >
+                  <span>Sugerido (3x):</span>
+                  <span>${(costoUnitarioCalculado * 3).toFixed(2)}</span>
+              </div>
+            )}
           </div>
 
           <div>
             <div className="flex items-center gap-1.5 mb-1">
-              <p className="text-slate-400 text-xs">Margen</p>
+              <p className="text-slate-400 text-xs">Margen Bruto</p>
               <div className="relative flex items-center group/tooltip">
-                <Info size={12} className="text-slate-500 hover:text-slate-300 transition-colors cursor-help" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-white text-slate-800 text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 text-center pointer-events-none shadow-xl border border-slate-200">
-                  Porcentaje del precio de venta que se convierte en tu ganancia bruta (después de pagar los ingredientes). Ideal &gt; 50%.
+                <Info size={12} className="text-slate-500 hover:text-slate-300 cursor-help transition-colors" />
+                <div className="absolute bottom-full right-0 mb-1.5 w-52 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] text-center pointer-events-none shadow-lg normal-case font-normal leading-tight">
+                    Lo ideal es estar por encima del 65% para cubrir costos operativos (luz, gas, sueldos) y dejar ganancia.
                 </div>
               </div>
             </div>
-            <p className={`text-2xl font-bold ${margen >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <p className={`text-xl font-bold ${margen >= 65 ? 'text-emerald-400' : margen >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
               {margen.toFixed(1)}%
             </p>
           </div>

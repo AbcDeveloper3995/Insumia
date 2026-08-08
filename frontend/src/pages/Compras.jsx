@@ -12,7 +12,7 @@ import { Modal } from '../components/common/Modal';
 import { CompraForm } from '../components/compras/CompraForm';
 
 export const Compras = () => {
-  const { session } = useAuth();
+  const { session, currentRestaurant } = useAuth();
   
   // Data
   const [compras, setCompras] = useState([]);
@@ -36,13 +36,7 @@ export const Compras = () => {
       setLoading(true);
       if (!session?.user?.id) return;
       
-      const { data: userData } = await supabase
-        .from('usuarios')
-        .select('restaurante_id')
-        .eq('id', session.user.id)
-        .single();
-        
-      const restauranteId = userData.restaurante_id;
+      const restauranteId = currentRestaurant?.id;
       if (!restauranteId) return;
 
       const provs = await comprasService.getProveedores(restauranteId);
@@ -72,8 +66,7 @@ export const Compras = () => {
       e.preventDefault();
       if (!nuevoProveedor.trim()) return;
       try {
-          const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', session.user.id).single();
-          const restauranteId = userData.restaurante_id;
+          const restauranteId = currentRestaurant?.id;
 
           await comprasService.createProveedor(restauranteId, { nombre: nuevoProveedor.trim() });
           setNuevoProveedor('');
@@ -95,8 +88,7 @@ export const Compras = () => {
       if (!editNombre.trim()) return;
       try {
           await comprasService.updateProveedor(id, { nombre: editNombre.trim() });
-          const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', session.user.id).single();
-          const provs = await comprasService.getProveedores(userData.restaurante_id);
+          const provs = await comprasService.getProveedores(currentRestaurant?.id);
           setProveedores(provs);
           setEditingProveedor(null);
           toast.success('Proveedor actualizado');
@@ -109,8 +101,7 @@ export const Compras = () => {
       if (window.confirm('¿Seguro que deseas eliminar este proveedor?')) {
           try {
               await comprasService.deleteProveedor(id);
-              const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', session.user.id).single();
-              const provs = await comprasService.getProveedores(userData.restaurante_id);
+              const provs = await comprasService.getProveedores(currentRestaurant?.id);
               setProveedores(provs);
               toast.success('Proveedor eliminado');
           } catch (err) {
@@ -125,8 +116,7 @@ export const Compras = () => {
       
       try {
           setIsSubmitting(true);
-          const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', session.user.id).single();
-          const restauranteId = userData.restaurante_id;
+          const restauranteId = currentRestaurant?.id;
 
           const estado = pagarDeCaja ? 'pagada' : 'pendiente';
           const cajaId = pagarDeCaja ? cajaActiva.id : null;

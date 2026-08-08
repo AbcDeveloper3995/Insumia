@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
 
 export const PuntoVenta = () => {
-  const { session } = useAuth();
+  const { session, currentRestaurant } = useAuth();
   const navigate = useNavigate();
 
   const [recetas, setRecetas] = useState([]);
@@ -32,13 +32,7 @@ export const PuntoVenta = () => {
       try {
         setLoading(true);
         if (session?.user?.id) {
-          const { data: userData } = await supabase
-            .from('usuarios')
-            .select('restaurante_id')
-            .eq('id', session.user.id)
-            .single();
-            
-          const restauranteId = userData.restaurante_id;
+          const restauranteId = currentRestaurant?.id;
           if (!restauranteId) return;
 
           const caja = await cajaService.getCajaAbierta(restauranteId);
@@ -105,8 +99,7 @@ export const PuntoVenta = () => {
   const procesarVenta = async () => {
     try {
       setIsProcessing(true);
-      const { data: userData } = await supabase.from('usuarios').select('restaurante_id').eq('id', session.user.id).single();
-      const restauranteId = userData.restaurante_id;
+      const restauranteId = currentRestaurant?.id;
 
       const articulosParaDB = carrito.map(item => ({
         receta_id: item.receta.id,
