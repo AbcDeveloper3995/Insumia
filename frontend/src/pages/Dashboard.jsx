@@ -95,12 +95,48 @@ export const Dashboard = () => {
           .sort((a,b) => b.ganancia - a.ganancia)
           .slice(0, 5);
 
+        // 6. Cargar Lotes para Alertas de Caducidad
+        let alertasCaducidad = [];
+        if (userData?.restaurante_id) {
+          const { data: lotes } = await supabase
+            .from('lotes_insumo')
+            .select('id, cantidad_actual, fecha_caducidad, insumos(nombre, dias_alerta_caducidad, unidad_base)')
+            .eq('restaurante_id', userData.restaurante_id)
+            .gt('cantidad_actual', 0)
+            .not('fecha_caducidad', 'is', null);
+
+          if (lotes) {
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+            
+            lotes.forEach(lote => {
+               // Convertir fecha UTC asumiendo formato YYYY-MM-DD
+               const fechaCad = new Date(lote.fecha_caducidad + 'T00:00:00');
+               const diasRestantes = Math.ceil((fechaCad - hoy) / (1000 * 60 * 60 * 24));
+               const limite = lote.insumos?.dias_alerta_caducidad || 7;
+               
+               if (diasRestantes <= limite) {
+                 alertasCaducidad.push({
+                   id: lote.id,
+                   nombre: lote.insumos?.nombre,
+                   diasRestantes,
+                   cantidad: lote.cantidad_actual,
+                   unidad: lote.insumos?.unidad_base,
+                   fecha: lote.fecha_caducidad
+                 });
+               }
+            });
+            alertasCaducidad.sort((a,b) => a.diasRestantes - b.diasRestantes);
+          }
+        }
+
         setStats({
           insumosCount: insumos?.length || 0,
           recetasCount: recetasActivas.length,
           ventasHoy: ventasHoyData?.length || 0,
           gananciaTotal,
-          valorInventario
+          valorInventario,
+          alertasCaducidad
         });
 
         setTopProductos(top5);
@@ -406,44 +442,78 @@ export const Dashboard = () => {
             )}
           </div>
 
-          {/* Panel Auxiliar Informativo (Bento Box) */}
-          <div className="p-8 rounded-3xl shadow-xl border flex flex-col justify-between relative overflow-hidden group bg-slate-900 border-slate-800 text-white">
-            
-            {/* Elemento de diseño de fondo simple */}
-            <div className="absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-screen filter blur-[80px] opacity-40 bg-blue-500"></div>
-            
-            <div className="relative z-10">
-              <div className="inline-flex px-3 py-1 bg-white/10 rounded-full text-xs font-bold tracking-widest uppercase mb-4 border border-white/5 text-slate-200">
-                Estado Operativo
-              </div>
-              <h2 className="text-3xl font-black tracking-tight mb-3 text-white">
-                Sistemas en Orden
-              </h2>
-              <p className="text-slate-300 text-sm leading-relaxed mb-6">
-                Insumia está registrando automáticamente las ventas, descontando los gramos de tus insumos, y vigilando tu stock y mermas en tiempo real.
-              </p>
+          {/* Panel Auxiliar Informativo / Alertas (Bento Box) */}
+          {stats.alertasCaducidad?.length > 0 ? (
+            <div className="p-8 rounded-3xl shadow-xl border flex flex-col relative overflow-hidden group bg-red-900 border-red-800 text-white h-[400px]">
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-screen filter blur-[80px] opacity-40 bg-red-500"></div>
               
-              <ul className="space-y-3">
-                  <li className="flex items-center text-sm font-medium text-slate-200">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full mr-4 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                    Inventario sincronizado
-                  </li>
-                  <li className="flex items-center text-sm font-medium text-slate-200">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full mr-4 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
-                    Costos de recetas calculados
-                  </li>
-                  <li className="flex items-center text-sm font-medium text-slate-200">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full mr-4 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></div>
-                    Auditoría Kardex activa
-                  </li>
-              </ul>
+              <div className="relative z-10 flex-1 flex flex-col min-h-0">
+                <div className="inline-flex px-3 py-1 bg-red-500/20 rounded-full text-xs font-bold tracking-widest uppercase mb-4 border border-red-400/30 text-red-100 self-start">
+                  Alerta de Caducidad
+                </div>
+                <h2 className="text-2xl font-black tracking-tight mb-2 text-white">
+                  Atención Requerida
+                </h2>
+                <p className="text-red-200 text-sm leading-relaxed mb-4">
+                  Tienes {stats.alertasCaducidad.length} lote(s) próximo(s) a caducar o ya vencidos.
+                </p>
+                
+                <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                  {stats.alertasCaducidad.map((alerta) => (
+                    <div key={alerta.id} className="bg-red-950/50 border border-red-800/50 p-3 rounded-xl">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-sm text-red-50">{alerta.nombre}</span>
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${alerta.diasRestantes < 0 ? 'bg-red-500 text-white' : alerta.diasRestantes === 0 ? 'bg-orange-500 text-white' : 'bg-yellow-500 text-yellow-950'}`}>
+                          {alerta.diasRestantes < 0 ? 'Caducado' : alerta.diasRestantes === 0 ? 'Caduca Hoy' : `En ${alerta.diasRestantes} días`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-red-300">Vence: {alerta.fecha}</span>
+                        <span className="text-xs font-bold text-red-200">{Number(alerta.cantidad).toFixed(1)} {alerta.unidad} res.</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            
-            <Link to="/ventas" className="relative z-10 mt-8 font-bold py-3.5 px-6 rounded-2xl transition-all duration-300 text-center flex items-center justify-center group/btn active:scale-95 shadow-md hover:shadow-lg text-white bg-blue-600 hover:bg-blue-500">
-              <span>Ir al Punto de Venta</span>
-              <ChevronRight size={18} className="ml-2 opacity-70 group-hover/btn:translate-x-1 transition-transform" />
-            </Link>
-          </div>
+          ) : (
+            <div className="p-8 rounded-3xl shadow-xl border flex flex-col justify-between relative overflow-hidden group bg-slate-900 border-slate-800 text-white">
+              {/* Elemento de diseño de fondo simple */}
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-screen filter blur-[80px] opacity-40 bg-blue-500"></div>
+              
+              <div className="relative z-10">
+                <div className="inline-flex px-3 py-1 bg-white/10 rounded-full text-xs font-bold tracking-widest uppercase mb-4 border border-white/5 text-slate-200">
+                  Estado Operativo
+                </div>
+                <h2 className="text-3xl font-black tracking-tight mb-3 text-white">
+                  Sistemas en Orden
+                </h2>
+                <p className="text-slate-300 text-sm leading-relaxed mb-6">
+                  Insumia está registrando automáticamente las ventas, descontando los gramos de tus insumos, y vigilando tu stock y mermas en tiempo real.
+                </p>
+                
+                <ul className="space-y-3">
+                    <li className="flex items-center text-sm font-medium text-slate-200">
+                      <div className="w-2 h-2 bg-emerald-400 rounded-full mr-4 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+                      Inventario sincronizado
+                    </li>
+                    <li className="flex items-center text-sm font-medium text-slate-200">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full mr-4 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
+                      Costos de recetas calculados
+                    </li>
+                    <li className="flex items-center text-sm font-medium text-slate-200">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full mr-4 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></div>
+                      Auditoría Kardex activa
+                    </li>
+                </ul>
+              </div>
+              
+              <Link to="/ventas" className="relative z-10 mt-8 font-bold py-3.5 px-6 rounded-2xl transition-all duration-300 text-center flex items-center justify-center group/btn active:scale-95 shadow-md hover:shadow-lg text-white bg-blue-600 hover:bg-blue-500">
+                <span>Ir al Punto de Venta</span>
+                <ChevronRight size={18} className="ml-2 opacity-70 group-hover/btn:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          )}
 
         </motion.div>
       </div>

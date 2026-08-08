@@ -265,6 +265,7 @@ export const Inventario = () => {
         isOpen={isModalOpen}
         onClose={modalStep === 2 ? null : handleCloseModal} // Prevenir cierre fácil en paso 2 sin skipear
         title={editingInsumo ? 'Editar Insumo' : modalTitle}
+        maxWidth="max-w-3xl"
       >
         {modalStep === 1 ? (
             <InsumoForm

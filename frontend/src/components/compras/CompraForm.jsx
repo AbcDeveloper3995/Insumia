@@ -33,7 +33,7 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
   const updateCarrito = (insumoId, field, value) => {
     setCarrito(carrito.map(item => {
       if (item.insumo.id === insumoId) {
-        return { ...item, [field]: Number(value) };
+        return { ...item, [field]: field === 'fecha_caducidad' ? value : Number(value) };
       }
       return item;
     }));
@@ -123,8 +123,8 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
               </div>
             ) : (
               carrito.map(item => (
-                <div key={item.insumo.id} className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
-                  <div className="flex justify-between items-start mb-3">
+                <div key={item.insumo.id} className="bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
                     <div>
                       <p className="font-bold text-sm text-slate-800">{item.insumo.nombre}</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">
@@ -134,16 +134,10 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
                     <button type="button" onClick={() => removeCarrito(item.insumo.id)} className="text-slate-400 hover:text-red-500 transition-colors p-1"><Trash2 size={16}/></button>
                   </div>
 
-                  <div className="flex gap-3">
-                    <div className="flex-1">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div>
                       <label className="text-[10px] text-slate-500 uppercase font-bold flex items-center gap-1 mb-1">
-                        Cantidad ({item.insumo.unidad_compra})
-                        <div className="relative flex items-center group/tooltip">
-                            <Info size={10} className="text-slate-300 hover:text-blue-500 cursor-help" />
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-40 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center pointer-events-none shadow-lg normal-case font-normal">
-                                Ingresa cuántas unidades de compra adquiriste (Ej: 2 cajas, 5 costales).
-                            </div>
-                        </div>
+                        Cant. ({item.insumo.unidad_compra})
                       </label>
                       <input 
                         type="number" 
@@ -154,9 +148,9 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
                         className="w-full bg-white border border-slate-300 px-3 py-2 rounded text-slate-800 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
                       />
                     </div>
-                    <div className="flex-1">
+                    <div>
                       <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">
-                        Costo Total ($)
+                        Costo ($)
                       </label>
                       <input 
                         type="number" 
@@ -167,9 +161,20 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
                         className="w-full bg-white border border-slate-300 px-3 py-2 rounded text-slate-800 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
                       />
                     </div>
+                    <div className="col-span-2 md:col-span-1">
+                      <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">
+                        Caducidad (Opcional)
+                      </label>
+                      <input 
+                        type="date" 
+                        value={item.fecha_caducidad || ''} 
+                        onChange={e => updateCarrito(item.insumo.id, 'fecha_caducidad', e.target.value)} 
+                        className="w-full bg-white border border-slate-300 px-3 py-2 rounded text-slate-800 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center" 
+                      />
+                    </div>
                   </div>
                   
-                  <div className="mt-2 text-right">
+                  <div className="text-right border-t border-slate-200 pt-2">
                      <p className="text-[10px] text-slate-500">
                         Costo Unitario: <span className="font-bold text-slate-700">${item.cantidad > 0 ? (item.costo_total / item.cantidad).toFixed(2) : '0.00'}</span> / {item.insumo.unidad_compra}
                      </p>
