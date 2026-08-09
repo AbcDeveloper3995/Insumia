@@ -10,10 +10,10 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false }
       unidad_compra: UNIDADES.KILOGRAMOS,
       unidad_base: UNIDADES.GRAMOS,
       factor_conversion: 1000,
-      costo_unidad_compra: 0,
+      costo_unidad_compra: '',
       porcentaje_rendimiento: 100,
-      cantidad_actual_base: 0,
-      umbral_minimo: 0,
+      cantidad_actual_base: '',
+      umbral_minimo: '',
       dias_alerta_caducidad: 7
     }
   });

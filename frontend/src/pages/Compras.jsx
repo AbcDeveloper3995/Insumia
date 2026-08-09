@@ -220,7 +220,7 @@ export const Compras = () => {
                                     <p className="text-xs text-slate-500">Paga la mercancía sacando dinero de tu Caja al instante, o déjala como deuda.</p>
                                 </div>
                             </div>
-                            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-base shadow hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2">
+                            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-base shadow hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
                                 <Plus size={20} /> Iniciar Primera Compra
                             </button>
                         </div>

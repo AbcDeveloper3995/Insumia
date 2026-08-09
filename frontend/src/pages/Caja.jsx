@@ -379,8 +379,8 @@ export const Caja = () => {
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de Movimiento</label>
                     <div className="flex gap-2">
-                        <button type="button" onClick={() => setFormData({...formData, tipo: 'ingreso'})} className={`flex-1 py-2 rounded-xl text-sm font-bold border ${formData.tipo === 'ingreso' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-500'}`}>Ingreso</button>
-                        <button type="button" onClick={() => setFormData({...formData, tipo: 'egreso'})} className={`flex-1 py-2 rounded-xl text-sm font-bold border ${formData.tipo === 'egreso' ? 'bg-[#D32F2F]/10 border-[#D32F2F]/20 text-[#D32F2F]' : 'bg-white border-slate-200 text-slate-500'}`}>Egreso (Retiro)</button>
+                        <button type="button" onClick={() => setFormData({...formData, tipo: 'ingreso'})} className={`flex-1 py-2 rounded-xl text-sm font-bold border cursor-pointer ${formData.tipo === 'ingreso' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-500'}`}>Ingreso</button>
+                        <button type="button" onClick={() => setFormData({...formData, tipo: 'egreso'})} className={`flex-1 py-2 rounded-xl text-sm font-bold border cursor-pointer ${formData.tipo === 'egreso' ? 'bg-[#D32F2F]/10 border-[#D32F2F]/20 text-[#D32F2F]' : 'bg-white border-slate-200 text-slate-500'}`}>Egreso (Retiro)</button>
                     </div>
                   </div>
                )}

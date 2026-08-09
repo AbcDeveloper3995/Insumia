@@ -168,7 +168,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
           <h3 className="font-bold text-slate-800">Ingredientes de la Receta</h3>
           <button
             type="button"
-            onClick={() => append({ item_id: '', cantidad_uso: 0 })}
+            onClick={() => append({ item_id: '', cantidad_uso: '' })}
             className="flex items-center space-x-1 px-3 py-1.5 bg-white border border-slate-300 text-blue-600 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium cursor-pointer"
           >
             <Plus size={16} />
