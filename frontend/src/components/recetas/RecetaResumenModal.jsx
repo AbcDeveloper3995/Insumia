@@ -99,40 +99,40 @@ export const RecetaResumenModal = ({ receta, insumos, recetas = [], onClose }) =
         <div className="flex-1 overflow-y-auto p-8">
             
             {/* KPIs Globales */}
-            <div className={`grid grid-cols-1 md:grid-cols-${(!isSubreceta || precioVenta > 0) ? '4' : '1'} gap-4 mb-8`}>
-               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2 text-slate-500">
-                      <div className="flex items-center gap-2">
-                          <Calculator size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">{isSubreceta ? 'Costo 1 Unid' : 'Costo Total'}</span>
+            <div className={`grid grid-cols-2 md:grid-cols-${(!isSubreceta || precioVenta > 0) ? '4' : '2'} gap-3 mb-6`}>
+               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                  <div className="flex items-center justify-between mb-1.5 text-slate-500">
+                      <div className="flex items-center gap-1.5">
+                          <Calculator size={14} /> <span className="text-[10px] font-bold uppercase tracking-wider">{isSubreceta ? 'Costo (1 un.)' : 'Costo Total'}</span>
                       </div>
                       {isSubreceta && (
                           <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold" title="Costo total de producir el lote">Lote: ${costoTotalCalculado.toFixed(2)}</span>
                       )}
                   </div>
-                  <h3 className="text-2xl font-black text-rose-500">${costoUnitarioCalculado.toFixed(2)}</h3>
+                  <h3 className="text-xl font-black text-rose-500">${costoUnitarioCalculado.toFixed(2)}</h3>
                </div>
 
                {(!isSubreceta || precioVenta > 0) && (
                  <>
-                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                      <div className="flex items-center gap-2 mb-2 text-slate-500">
-                          <DollarSign size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Precio Venta</span>
+                   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                      <div className="flex items-center gap-1.5 mb-1.5 text-slate-500">
+                          <DollarSign size={14} /> <span className="text-[10px] font-bold uppercase tracking-wider">Precio Venta</span>
                       </div>
-                      <h3 className="text-2xl font-black text-slate-800">${precioVenta.toFixed(2)}</h3>
+                      <h3 className="text-xl font-black text-slate-800">${precioVenta.toFixed(2)}</h3>
                    </div>
 
-                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                      <div className="flex items-center gap-2 mb-2 text-slate-500">
-                          <TrendingUp size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Ganancia</span>
+                   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                      <div className="flex items-center gap-1.5 mb-1.5 text-slate-500">
+                          <TrendingUp size={14} /> <span className="text-[10px] font-bold uppercase tracking-wider">Ganancia</span>
                       </div>
-                      <h3 className="text-2xl font-black text-emerald-600">${gananciaTotal.toFixed(2)}</h3>
+                      <h3 className="text-xl font-black text-emerald-600">${gananciaTotal.toFixed(2)}</h3>
                    </div>
 
-                   <div className={`p-5 rounded-2xl border shadow-sm flex flex-col justify-between ${isRentable ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-                      <div className={`flex items-center gap-2 mb-2 ${isRentable ? 'text-emerald-700' : 'text-red-700'}`}>
-                          <PieChart size={16} /> <span className="text-[10px] font-bold uppercase tracking-widest">Margen (FC)</span>
+                   <div className={`p-4 rounded-2xl border shadow-sm flex flex-col justify-center ${isRentable ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                      <div className={`flex items-center gap-1.5 mb-1.5 ${isRentable ? 'text-emerald-700' : 'text-red-700'}`}>
+                          <PieChart size={14} /> <span className="text-[10px] font-bold uppercase tracking-wider">Margen (FC)</span>
                       </div>
-                      <h3 className={`text-2xl font-black ${isRentable ? 'text-emerald-700' : 'text-red-700'}`}>{margenTotal.toFixed(1)}%</h3>
+                      <h3 className={`text-xl font-black ${isRentable ? 'text-emerald-700' : 'text-red-700'}`}>{margenTotal.toFixed(1)}%</h3>
                    </div>
                  </>
                )}

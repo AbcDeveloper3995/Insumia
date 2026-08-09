@@ -329,8 +329,8 @@ export const Informes = () => {
         )}
         
         {/* KPIs Resumen Principal */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="relative hover:z-50 transition-all bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Platillos Vendidos</p>
             </div>
@@ -340,42 +340,15 @@ export const Informes = () => {
             </div>
           </div>
 
-          <div className="bg-white/70 backdrop-blur-md p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-3">
-              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Líderes (Insumos)</p>
+          <div className="relative hover:z-50 transition-all bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Ventas Totales</p>
               <div className="relative group/tooltip">
                  <AlertCircle size={14} className="text-slate-400 cursor-help" />
                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 p-3 bg-slate-800 text-white text-[11px] rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center font-medium">
-                   El insumo que te dejó más ganancia líquida y el que más se usó.
+                   Dinero bruto que entró a la caja por ventas.
                  </div>
                </div>
-            </div>
-            
-            {totals.topInsumoGanancia ? (
-              <div className="flex flex-col gap-3">
-                 <div className="flex items-center gap-2.5">
-                    <div className="p-1.5 bg-amber-50 text-amber-500 rounded-lg shrink-0"><Crown size={14} strokeWidth={2.5}/></div>
-                    <div className="overflow-hidden">
-                       <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Top Ganancia</p>
-                       <p className="text-sm font-bold text-slate-800 truncate" title={totals.topInsumoGanancia.nombre}>{totals.topInsumoGanancia.nombre}</p>
-                    </div>
-                 </div>
-                 <div className="flex items-center gap-2.5">
-                    <div className="p-1.5 bg-blue-50 text-blue-500 rounded-lg shrink-0"><PackageOpen size={14} strokeWidth={2.5}/></div>
-                    <div className="overflow-hidden">
-                       <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Top Uso</p>
-                       <p className="text-sm font-bold text-slate-800 truncate" title={totals.topInsumoUso.nombre}>{totals.topInsumoUso.nombre}</p>
-                    </div>
-                 </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex items-center text-slate-400 text-xs font-medium">Sin datos en periodo</div>
-            )}
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Ingreso Bruto</p>
             </div>
             <div className="flex items-end justify-between">
               <h3 className="text-3xl font-black text-emerald-600 tracking-tighter truncate" title={`$${totals.ingresoBruto.toFixed(2)}`}>${totals.ingresoBruto.toFixed(2)}</h3>
@@ -383,9 +356,15 @@ export const Informes = () => {
             </div>
           </div>
 
-          <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+          <div className="relative hover:z-50 transition-all bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
-              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Ganancia Neta</p>
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Ganancia Bruta Teórica</p>
+              <div className="relative group/tooltip">
+                 <AlertCircle size={14} className="text-slate-400 cursor-help" />
+                 <div className="absolute top-full right-0 mt-2 w-56 p-3 bg-slate-800 text-white text-[11px] rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center font-medium">
+                   Es lo que te debería quedar de las ventas tras restar el costo de los ingredientes (sin contar desperdicios).
+                 </div>
+               </div>
             </div>
             <div className="flex items-end justify-between">
               <h3 className="text-3xl font-black text-sky-600 tracking-tighter truncate" title={`$${totals.gananciaNeta.toFixed(2)}`}>${totals.gananciaNeta.toFixed(2)}</h3>
@@ -393,13 +372,15 @@ export const Informes = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-3xl shadow-lg border border-slate-700 text-white flex flex-col justify-between h-full relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full mix-blend-overlay filter blur-[40px] opacity-10"></div>
+          <div className="relative hover:z-50 transition-all bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-3xl shadow-lg border border-slate-700 text-white flex flex-col justify-between h-full">
+            <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full mix-blend-overlay filter blur-[40px] opacity-10"></div>
+            </div>
             <div className="flex justify-between items-start mb-2 relative z-10">
                <p className="text-[10px] font-bold text-slate-300 tracking-widest uppercase">Rentabilidad</p>
                <div className="relative group/tooltip">
                  <AlertCircle size={14} className="text-slate-400 cursor-help" />
-                 <div className="absolute top-full right-0 mt-2 w-48 p-2 bg-white text-slate-800 text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center">
+                 <div className="absolute top-full right-0 mt-2 w-48 p-2 bg-white text-slate-800 text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center font-medium">
                    Margen de ganancia promedio del periodo.
                  </div>
                </div>
@@ -409,6 +390,83 @@ export const Informes = () => {
               <div className="p-2 bg-white/10 text-white rounded-xl"><Activity size={18} strokeWidth={2.5} /></div>
             </div>
           </div>
+
+          <div className="relative hover:z-50 transition-all bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-3">
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Top Insumo (Ganancia)</p>
+              <div className="relative group/tooltip">
+                 <AlertCircle size={14} className="text-slate-400 cursor-help" />
+                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 p-3 bg-slate-800 text-white text-[11px] rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center font-medium">
+                   El insumo que aportó la mayor ganancia líquida en este periodo.
+                 </div>
+               </div>
+            </div>
+            {totals.topInsumoGanancia ? (
+              <div className="flex items-center gap-3">
+                 <div className="p-2 bg-amber-50 text-amber-500 rounded-xl shrink-0"><Crown size={18} strokeWidth={2.5}/></div>
+                 <div className="overflow-hidden">
+                    <p className="text-sm font-black text-slate-800 truncate" title={totals.topInsumoGanancia.nombre}>{totals.topInsumoGanancia.nombre}</p>
+                 </div>
+              </div>
+            ) : (
+              <div className="text-slate-400 text-xs font-medium">Sin datos en periodo</div>
+            )}
+          </div>
+
+          <div className="relative hover:z-50 transition-all bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-3">
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Top Insumo (Uso)</p>
+              <div className="relative group/tooltip">
+                 <AlertCircle size={14} className="text-slate-400 cursor-help" />
+                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 p-3 bg-slate-800 text-white text-[11px] rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center font-medium">
+                   El insumo que más veces fue requerido por los platillos vendidos.
+                 </div>
+               </div>
+            </div>
+            {totals.topInsumoUso ? (
+              <div className="flex items-center gap-3">
+                 <div className="p-2 bg-blue-50 text-blue-500 rounded-xl shrink-0"><PackageOpen size={18} strokeWidth={2.5}/></div>
+                 <div className="overflow-hidden">
+                    <p className="text-sm font-black text-slate-800 truncate" title={totals.topInsumoUso.nombre}>{totals.topInsumoUso.nombre}</p>
+                 </div>
+              </div>
+            ) : (
+              <div className="text-slate-400 text-xs font-medium">Sin datos en periodo</div>
+            )}
+          </div>
+
+          <div className="relative hover:z-50 transition-all bg-rose-50/50 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-rose-100 flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-[10px] font-bold text-rose-500 tracking-widest uppercase">Pérdida por Mermas</p>
+              <div className="relative group/tooltip">
+                 <AlertCircle size={14} className="text-rose-400 cursor-help" />
+                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 p-3 bg-slate-800 text-white text-[11px] rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center font-medium">
+                   Dinero perdido por desperdicio de insumos o comida caducada/quemada. Sale del reporte de mermas de inventario.
+                 </div>
+               </div>
+            </div>
+            <div className="flex items-end justify-between">
+              <h3 className="text-3xl font-black text-rose-600 tracking-tighter truncate" title={`$${totals.perdidaMermas.toFixed(2)}`}>${totals.perdidaMermas.toFixed(2)}</h3>
+              <div className="p-2 bg-rose-100 text-rose-600 rounded-xl"><AlertTriangle size={18} strokeWidth={2.5} /></div>
+            </div>
+          </div>
+
+          <div className="relative hover:z-50 transition-all bg-emerald-50/50 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-emerald-100 flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-[10px] font-bold text-emerald-600 tracking-widest uppercase">Utilidad Bruta Real</p>
+              <div className="relative group/tooltip">
+                 <AlertCircle size={14} className="text-emerald-500 cursor-help" />
+                 <div className="absolute top-full right-0 mt-2 w-56 p-3 bg-slate-800 text-white text-[11px] rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center font-medium">
+                   Ganancia Bruta Teórica MENOS la Pérdida por Mermas. Este es el dinero 100% libre que te quedó tras pagar la materia prima.
+                 </div>
+               </div>
+            </div>
+            <div className="flex items-end justify-between">
+              <h3 className="text-4xl font-black text-emerald-600 tracking-tighter truncate" title={`$${(totals.gananciaNeta - totals.perdidaMermas).toFixed(2)}`}>${(totals.gananciaNeta - totals.perdidaMermas).toFixed(2)}</h3>
+              <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl"><DollarSign size={24} strokeWidth={3} /></div>
+            </div>
+          </div>
+
         </div>
 
         {/* Gráficos Estratégicos */}
