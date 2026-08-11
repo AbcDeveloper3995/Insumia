@@ -213,10 +213,11 @@ export const Recetas = () => {
           defaultValues={editingReceta ? {
             nombre: editingReceta.nombre || '',
             tipo: editingReceta.tipo || 'platillo',
+            rendimiento: editingReceta.rendimiento || 1,
             precio_venta: editingReceta.precio_venta || 0,
             costo_total: editingReceta.costo_total || 0,
             ingredientes: (editingReceta.ingredientes || []).map(ing => ({
-              insumo_id: ing.insumo_id,
+              item_id: ing.item_id,
               cantidad_uso: ing.cantidad_uso
             }))
           } : null}

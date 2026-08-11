@@ -88,7 +88,17 @@ export const KardexModal = ({ insumo, onClose }) => {
                               Tomamos el precio de compra (${Number(insumo.costo_unidad_compra).toFixed(2)} por {insumo.unidad_compra}) y lo dividimos entre tu factor de conversión ({insumo.factor_conversion}) y rendimiento ({insumo.porcentaje_rendimiento}%).
                           </p>
                           <div className="inline-flex bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm items-center gap-2">
-                              <span className="text-xs font-bold text-slate-500 uppercase">Costo por 1 {insumo.unidad_base}:</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-bold text-slate-500 uppercase">Costo por 1 {insumo.unidad_base}:</span>
+                                <div className="relative flex items-center group/tooltip">
+                                  <Info size={14} className="text-slate-400 hover:text-blue-500 cursor-help" />
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64 p-3 bg-slate-800 text-white text-[11px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-left pointer-events-none shadow-lg">
+                                    <div className="font-bold mb-1.5 text-blue-300 border-b border-slate-600 pb-1">Desglose del Costo Real</div>
+                                    <p className="mb-1">Costo Original: <strong>${(Number(insumo.costo_unidad_compra) / Math.max(Number(insumo.factor_conversion || 1), 1)).toFixed(4)}</strong> por {insumo.unidad_base}</p>
+                                    <p>Ajuste por Merma ({insumo.porcentaje_rendimiento}%): <strong>${(Number(insumo.costo_unidad_compra) / Math.max(Number(insumo.factor_conversion || 1), 1) / (Math.max(Number(insumo.porcentaje_rendimiento || 100), 1) / 100)).toFixed(4)}</strong></p>
+                                  </div>
+                                </div>
+                              </div>
                               <span className="text-sm font-black text-blue-700">${costoGramo.toFixed(4)}</span>
                           </div>
                       </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ShoppingCart, Plus, Check, SkipForward } from 'lucide-react';
+import { CustomSelect } from '../ui/CustomSelect';
 
 export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProveedor, onSubmit, onSkip, isLoading }) => {
   const [proveedorId, setProveedorId] = useState('');
@@ -93,19 +94,15 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
               </button>
             </div>
           ) : (
-            <select
+            <CustomSelect
               value={proveedorId}
-              onChange={handleProviderSelect}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-slate-700 cursor-pointer"
-            >
-              <option value="">-- Seleccionar Proveedor --</option>
-              {proveedores.map(p => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
-              ))}
-              <option value="NEW" className="font-bold text-blue-600">
-                + Añadir nuevo proveedor...
-              </option>
-            </select>
+              onChange={(val) => handleProviderSelect({ target: { value: val }})}
+              options={[
+                { value: '', label: '-- Seleccionar Proveedor --' },
+                ...proveedores.map(p => ({ value: p.id, label: p.nombre })),
+                { value: 'NEW', label: '+ Añadir nuevo proveedor...' }
+              ]}
+            />
           )}
         </div>
 

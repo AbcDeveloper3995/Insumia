@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ShoppingCart, Plus, X, Search, Trash2, Info } from 'lucide-react';
+import { CustomSelect } from '../ui/CustomSelect';
 
 export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoading = false }) => {
   const [proveedorId, setProveedorId] = useState('');
@@ -62,15 +63,14 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
       {/* 1. Proveedor */}
       <div className="mb-4 shrink-0">
         <label className="block text-sm font-bold text-slate-700 mb-2">Proveedor</label>
-        <select 
+        <CustomSelect 
           value={proveedorId} 
-          onChange={e => setProveedorId(e.target.value)} 
-          className="w-full bg-slate-50 border border-slate-300 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-700"
-          required
-        >
-          <option value="">-- Seleccionar Proveedor --</option>
-          {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-        </select>
+          onChange={setProveedorId} 
+          options={[
+            { value: '', label: '-- Seleccionar Proveedor --' },
+            ...proveedores.map(p => ({ value: p.id, label: p.nombre }))
+          ]}
+        />
       </div>
 
       <div className="flex flex-1 gap-6 min-h-0 overflow-hidden flex-col md:flex-row">

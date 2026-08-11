@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Plus, Trash2, X, Calculator, Info, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { CustomSelect } from '../ui/CustomSelect';
 
 export const MermaForm = ({ insumos, recetas, onClose, onSubmit, isLoading = false }) => {
   const [costoCalculado, setCostoCalculado] = useState(0);
@@ -141,17 +142,20 @@ export const MermaForm = ({ insumos, recetas, onClose, onSubmit, isLoading = fal
                       
                       <div className="flex-1">
                         <label className="block text-xs font-medium text-slate-500 mb-1">Insumo o Subreceta</label>
-                        <select
-                          {...register(`detalles.${index}.item_id`, { required: 'Requerido' })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm"
-                        >
-                          <option value="">Seleccionar...</option>
-                          {availableItems.map(item => (
-                            <option key={item.id} value={item.id}>
-                              {item.nombre} {item.tipo === 'receta' ? '(Subreceta)' : ''}
-                            </option>
-                          ))}
-                        </select>
+                        <Controller
+                          name={`detalles.${index}.item_id`}
+                          control={control}
+                          rules={{ required: 'Requerido' }}
+                          render={({ field }) => (
+                            <CustomSelect
+                              {...field}
+                              options={availableItems.map(item => ({
+                                value: item.id,
+                                label: `${item.nombre} ${item.tipo === 'receta' ? '(Subreceta)' : ''}`
+                              }))}
+                            />
+                          )}
+                        />
                         {errors.detalles?.[index]?.item_id && <span className="text-red-500 text-xs mt-1 block">Requerido</span>}
                       </div>
 

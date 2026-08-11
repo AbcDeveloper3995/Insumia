@@ -168,13 +168,35 @@ export const Inventario = () => {
   };
 
   const handleDelete = async (insumo) => {
+    const isConfirmed = window.confirm(
+      `¿Estás seguro de que deseas eliminar el insumo "${insumo.nombre}"?\n\n` +
+      `ADVERTENCIA CRÍTICA: Si este insumo forma parte de alguna receta, será eliminado de la misma automáticamente y podría afectar los costos de tus platillos.`
+    );
+    
+    if (!isConfirmed) return;
+
     try {
-      await insumosService.deleteInsumo(insumo.id);
-      toast.success('Insumo eliminado');
+      const res = await insumosService.deleteInsumo(insumo.id);
+      if (res?.action === 'archived') {
+        toast.success('Insumo archivado. (Aún forma parte del historial o recetas)');
+      } else {
+        toast.success('Insumo eliminado por completo');
+      }
       await loadData();
     } catch (error) {
       console.error('Error eliminando:', error);
       toast.error('Error al eliminar el insumo');
+    }
+  };
+
+  const handleRestore = async (insumo) => {
+    try {
+      await insumosService.restoreInsumo(insumo.id);
+      toast.success('Insumo restaurado');
+      await loadData();
+    } catch (error) {
+      console.error('Error restaurando:', error);
+      toast.error('Error al restaurar el insumo');
     }
   };
 
@@ -293,6 +315,7 @@ export const Inventario = () => {
                   insumos={filteredInsumos} 
                   onEdit={handleOpenModal} 
                   onDelete={handleDelete} 
+                  onRestore={handleRestore}
                   onInitialPurchase={handleOpenCompraInicial}
                   onViewKardex={setSelectedKardexInsumo}
                 />
@@ -340,7 +363,7 @@ export const Inventario = () => {
 
       {isMermaModalOpen && (
         <MermaForm
-          insumos={insumos}
+          insumos={insumos.filter(i => i.activo !== false)}
           recetas={recetas}
           onClose={() => setIsMermaModalOpen(false)}
           onSubmit={handleMermaSubmit}

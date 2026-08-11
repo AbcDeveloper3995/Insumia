@@ -81,6 +81,10 @@ export const NotificationBell = ({ isSidebarExpanded }) => {
   useEffect(() => {
     fetchAlertas();
     
+    // Listener global para refrescar alertas desde otros componentes
+    const handleRefreshAlerts = () => fetchAlertas();
+    window.addEventListener('refreshAlerts', handleRefreshAlerts);
+    
     // Configurar listener para clics fuera del popover
     const handleClickOutside = (event) => {
       if (popoverRef.current && !popoverRef.current.contains(event.target)) {
@@ -88,7 +92,10 @@ export const NotificationBell = ({ isSidebarExpanded }) => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener('refreshAlerts', handleRefreshAlerts);
+    };
   }, []);
 
   const totalAlerts = alertas.stock.length + alertas.recetas.length + alertas.deudas.length + (alertas.descuadreCaja > 0 ? 1 : 0);

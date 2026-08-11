@@ -1,6 +1,6 @@
-import { AlertTriangle, Edit, Trash2, Package, Info, Lightbulb, ChefHat, TrendingDown, ShoppingCart } from 'lucide-react';
+import { AlertTriangle, Edit, Trash2, Package, Info, Lightbulb, ChefHat, TrendingDown, ShoppingCart, Archive, RefreshCw } from 'lucide-react';
 
-export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase, onViewKardex }) => {
+export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onInitialPurchase, onViewKardex }) => {
   if (!insumos || insumos.length === 0) {
     return (
       <div className="space-y-6">
@@ -116,24 +116,34 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase, onVi
         const stockActual = Number(insumo.cantidad_actual_base || 0);
         const costo = Number(insumo.costo_unidad_compra || 0);
         const umbral = Number(insumo.umbral_minimo || 0);
+        const isInactive = insumo.activo === false;
         
-        const needsPurchase = stockActual === 0 && costo === 0;
-        const isBajoUmbral = stockActual <= umbral && !needsPurchase;
+        const needsPurchase = stockActual === 0 && costo === 0 && !isInactive;
+        const isBajoUmbral = stockActual <= umbral && !needsPurchase && !isInactive;
         
         return (
           <div 
             key={insumo.id} 
             className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col relative
+              ${isInactive ? 'opacity-70 grayscale-[0.3]' : ''}
               ${needsPurchase ? 'border-2 border-rose-200' : (isBajoUmbral ? 'border-2 border-amber-200' : 'border border-slate-200')}
             `}
           >
-            {needsPurchase && (
+            {isInactive && (
+              <div className="bg-slate-200 border-b border-slate-300 px-3 py-1.5 flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Archive size={14} className="text-slate-600" />
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Archivado (Inactivo)</span>
+                </div>
+              </div>
+            )}
+            {needsPurchase && !isInactive && (
               <div className="bg-rose-50 border-b border-rose-100 px-3 py-1.5 flex items-center gap-1.5">
                 <AlertTriangle size={14} className="text-rose-600" />
                 <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wide">Falta configurar costo</span>
               </div>
             )}
-            {isBajoUmbral && (
+            {isBajoUmbral && !isInactive && (
               <div className="bg-amber-50 border-b border-amber-100 px-3 py-1.5 flex items-center gap-1.5">
                 <AlertTriangle size={14} className="text-amber-600" />
                 <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">Stock Bajo</span>
@@ -176,29 +186,19 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase, onVi
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center gap-1 mb-0.5">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Rendimiento</p>
-                    <div className="relative flex items-center group/tooltip">
-                      <Info size={12} className="text-slate-300 hover:text-blue-500 cursor-help" />
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-40 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center pointer-events-none shadow-lg">
-                        Porcentaje de la compra que realmente se usa luego de quitar desperdicios (merma).
-                      </div>
-                    </div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400">C. Compra</p>
                   </div>
-                  <p className="text-sm font-medium text-slate-700">{insumo.porcentaje_rendimiento}%</p>
+                  <span className={`inline-block px-2 py-0.5 rounded text-sm font-bold ${needsPurchase ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-700'}`}>
+                    ${Number(insumo.costo_unidad_compra || 0).toFixed(2)}
+                  </span>
                 </div>
                 <div>
                   <div className="flex items-center gap-1 mb-0.5">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Costo ({insumo.unidad_compra})</p>
-                    <div className="relative flex items-center group/tooltip">
-                      <Info size={12} className="text-slate-300 hover:text-blue-500 cursor-help" />
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-40 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center pointer-events-none shadow-lg">
-                        Precio que pagaste la última vez por 1 {insumo.unidad_compra}.
-                      </div>
-                    </div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Rendim.</p>
                   </div>
-                  <p className={`text-sm font-medium ${needsPurchase ? 'text-rose-500' : 'text-slate-700'}`}>
-                    ${Number(insumo.costo_unidad_compra).toFixed(2)}
-                  </p>
+                  <span className="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-sm font-bold">
+                    {insumo.porcentaje_rendimiento}%
+                  </span>
                 </div>
               </div>
               
@@ -217,7 +217,7 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase, onVi
               {needsPurchase ? (
                 <>
                   <button 
-                    onClick={() => onDelete(insumo.id)}
+                    onClick={() => onDelete(insumo)}
                     className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
                     title="Eliminar Insumo"
                   >
@@ -241,20 +241,32 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onInitialPurchase, onVi
                     <Info size={14} className="text-slate-400" />
                     Detalles
                   </button>
-                  <button 
-                    onClick={() => onEdit(insumo)}
-                    className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                    title="Editar Insumo"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button 
-                    onClick={() => onDelete(insumo.id)}
-                    className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                    title="Eliminar Insumo"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {isInactive ? (
+                    <button 
+                      onClick={() => onRestore && onRestore(insumo)}
+                      className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                      title="Restaurar Insumo"
+                    >
+                      <RefreshCw size={16} />
+                    </button>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => onEdit(insumo)}
+                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                        title="Editar Insumo"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button 
+                        onClick={() => onDelete(insumo)}
+                        className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Eliminar Insumo"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

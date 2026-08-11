@@ -30,6 +30,7 @@ export const Compras = () => {
   // Modal de Registro de Compra
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [compraToPay, setCompraToPay] = useState(null);
 
   const loadData = async () => {
     try {
@@ -46,7 +47,7 @@ export const Compras = () => {
       setCompras(comps);
       
       const ins = await insumosService.getInsumos(restauranteId);
-      setInsumos(ins);
+      setInsumos((ins || []).filter(i => i.activo !== false));
       
       const caja = await cajaService.getCajaAbierta(restauranteId);
       setCajaActiva(caja);
@@ -132,6 +133,7 @@ export const Compras = () => {
           toast.success('¡Compra registrada con éxito!');
           setIsModalOpen(false);
           loadData();
+          window.dispatchEvent(new Event('refreshAlerts'));
       } catch (err) {
           console.error(err);
           toast.error('Error al registrar compra');
@@ -141,16 +143,22 @@ export const Compras = () => {
   };
   
   // Pagar cuenta pendiente
-  const handlePagarCuenta = async (compraId) => {
+  const handlePagarCuenta = (compraId) => {
       if (!cajaActiva) return toast.error('Debes abrir caja para pagar en efectivo.');
-      if (window.confirm('¿Pagar esta cuenta pendiente usando el efectivo de la caja actual?')) {
-          try {
-              await comprasService.marcarCompraComoPagada(compraId, cajaActiva.id);
-              toast.success('Cuenta pagada');
-              loadData();
-          } catch (err) {
-              toast.error('Error al pagar');
-          }
+      setCompraToPay(compraId);
+  };
+
+  const confirmPagarCuenta = async () => {
+      if (!compraToPay || !cajaActiva) return;
+      try {
+          await comprasService.marcarCompraComoPagada(compraToPay, cajaActiva.id);
+          toast.success('Cuenta pagada exitosamente');
+          loadData();
+          window.dispatchEvent(new Event('refreshAlerts'));
+      } catch (err) {
+          toast.error('Error al pagar');
+      } finally {
+          setCompraToPay(null);
       }
   };
 
@@ -326,6 +334,37 @@ export const Compras = () => {
           onSubmit={handleRegistrarCompra}
           isLoading={isSubmitting}
         />
+      </Modal>
+
+      {/* Modal de Confirmación de Pago */}
+      <Modal
+        isOpen={!!compraToPay}
+        onClose={() => setCompraToPay(null)}
+        title="💳 Confirmar Pago"
+        maxWidth="max-w-md"
+      >
+        <div className="text-slate-700">
+          <p className="mb-4 text-base">
+            ¿Estás seguro de que deseas pagar esta cuenta pendiente usando el efectivo de la caja actual?
+          </p>
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded-lg mb-6 text-sm">
+            Se registrará un egreso en la caja por el total de la compra.
+          </div>
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setCompraToPay(null)}
+              className="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors font-medium cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmPagarCuenta}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md cursor-pointer"
+            >
+              Confirmar Pago
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Plus, Trash2, Calculator, Info } from 'lucide-react';
 import { insumosService } from '../../services/api/insumos';
 import { recetasService } from '../../services/api/recetas';
+import { CustomSelect } from '../ui/CustomSelect';
 
 export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }) => {
   const [insumos, setInsumos] = useState([]);
@@ -82,6 +83,22 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
     }
   };
 
+  const obtenerCostoBaseItem = (itemId) => {
+    if (!itemId) return 0;
+    if (itemId.startsWith('subreceta_')) {
+      const id = itemId.replace('subreceta_', '');
+      const sub = subrecetas.find(s => s.id === id);
+      if (!sub) return 0;
+      return Number(sub.costo_total) / (Number(sub.rendimiento) || 1);
+    } else {
+      const id = itemId.replace('insumo_', '');
+      const insumoRef = insumos.find(i => i.id === id);
+      if (!insumoRef) return 0;
+      const costoBase = Number(insumoRef.costo_unidad_compra) / Number(insumoRef.factor_conversion);
+      return costoBase / (Number(insumoRef.porcentaje_rendimiento) / 100);
+    }
+  };
+
   const recalcularCostoTotal = () => {
     if (!insumos.length && !subrecetas.length) return;
     
@@ -131,13 +148,19 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
         
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
-          <select
-            {...register('tipo')}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-          >
-            <option value="platillo">Platillo Final (Venta)</option>
-            <option value="subreceta">Sub-receta (Preparación Base)</option>
-          </select>
+          <Controller
+            name="tipo"
+            control={control}
+            render={({ field }) => (
+              <CustomSelect
+                {...field}
+                options={[
+                  { value: 'platillo', label: 'Platillo Final (Venta)' },
+                  { value: 'subreceta', label: 'Sub-receta (Preparación Base)' }
+                ]}
+              />
+            )}
+          />
         </div>
 
         <div>
@@ -201,33 +224,46 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                 <div key={field.id} className="bg-white p-4 border border-slate-200 rounded-lg shadow-sm">
                   <div className="flex items-start space-x-3 mb-2">
                     <div className="flex-1">
-                      <select
-                        {...register(`ingredientes.${index}.item_id`, { 
-                          required: true,
-                          onChange: recalcularCostoTotal 
-                        })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white"
-                      >
-                        <option value="">Selecciona un ingrediente...</option>
-                        {insumos.length > 0 && (
-                          <optgroup label="Insumos Crudos">
-                            {insumos.map(insumo => (
-                              <option key={`insumo_${insumo.id}`} value={`insumo_${insumo.id}`}>
-                                {insumo.nombre} (usa {insumo.unidad_base})
-                              </option>
-                            ))}
-                          </optgroup>
-                        )}
-                        {subrecetas.length > 0 && (
-                          <optgroup label="Subrecetas (Lotes/Preparaciones)">
-                            {subrecetas.map(sub => (
-                              <option key={`subreceta_${sub.id}`} value={`subreceta_${sub.id}`}>
-                                {sub.nombre} (Produce {sub.rendimiento} u.)
-                              </option>
-                            ))}
-                          </optgroup>
-                        )}
-                      </select>
+                      <Controller
+                        name={`ingredientes.${index}.item_id`}
+                        control={control}
+                        rules={{ required: true }}
+                        render={({ field }) => {
+                          const ingredientOptions = [];
+                          if (insumos.length > 0) {
+                            ingredientOptions.push({
+                              label: 'Insumos Crudos',
+                              options: insumos
+                                .filter(i => i.activo !== false || watchIngredientes.some(ing => ing.item_id === `insumo_${i.id}`))
+                                .map(insumo => ({
+                                  value: `insumo_${insumo.id}`,
+                                  label: `${insumo.nombre} ${insumo.activo === false ? '(Archivado)' : ''} (usa ${insumo.unidad_base})`
+                                }))
+                            });
+                          }
+                          if (subrecetas.length > 0) {
+                            ingredientOptions.push({
+                              label: 'Subrecetas (Lotes/Preparaciones)',
+                              options: subrecetas.map(sub => ({
+                                value: `subreceta_${sub.id}`,
+                                label: `${sub.nombre} (Produce ${sub.rendimiento} u.)`
+                              }))
+                            });
+                          }
+
+                          return (
+                            <CustomSelect
+                              {...field}
+                              onChange={(val) => {
+                                field.onChange(val);
+                                setTimeout(recalcularCostoTotal, 0);
+                              }}
+                              options={ingredientOptions}
+                              placeholder="Selecciona un ingrediente..."
+                            />
+                          );
+                        }}
+                      />
                     </div>
                     
                     <div className="w-32 relative">
@@ -261,8 +297,14 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                   
                   {currentItemId && (
                     <div className="flex items-center text-xs justify-end pr-12">
+                      <span className="text-slate-400 mr-3 flex items-center gap-1">
+                          Costo Base: 
+                          <span className="font-semibold text-slate-500">
+                            ${obtenerCostoBaseItem(currentItemId).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} / {unidadVisual}
+                          </span>
+                      </span>
                       <span className="text-slate-500 mr-2 flex items-center gap-1">
-                          Costo Aportado:
+                          Costo de Insumo:
                           <div className="relative flex items-center group/tooltip">
                             <Info size={12} className="text-slate-400 hover:text-blue-500 cursor-help" />
                             <div className="absolute bottom-full right-0 mb-1.5 w-64 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] text-left pointer-events-none shadow-lg normal-case font-normal leading-tight">

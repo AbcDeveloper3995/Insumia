@@ -19,6 +19,7 @@ import {
   PackageOpen
 } from 'lucide-react';
 import { LoadingSpinner } from '../components/ui/Loading';
+import { CustomSelect } from '../components/ui/CustomSelect';
 import { ventasService } from '../services/api/ventas';
 import { recetasService } from '../services/api/recetas';
 import { mermasService } from '../services/api/mermas';
@@ -289,17 +290,17 @@ export const Informes = () => {
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Informes Estratégicos</h1>
             <p className="text-slate-500 mt-1 text-sm">Toma de decisiones basada en datos reales.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <select 
+          <div className="flex items-center gap-3 w-48 relative z-[60]">
+            <CustomSelect
               value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="bg-white border border-slate-200 text-slate-700 px-4 py-2 pr-8 rounded-xl text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:bg-slate-50 transition-colors appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_12px_center] bg-no-repeat"
-            >
-              <option value="hoy">Hoy</option>
-              <option value="semana">Esta Semana</option>
-              <option value="mes">Este Mes</option>
-              <option value="historico">Histórico (Todo)</option>
-            </select>
+              onChange={setDateFilter}
+              options={[
+                { value: 'hoy', label: 'Hoy' },
+                { value: 'semana', label: 'Esta Semana' },
+                { value: 'mes', label: 'Este Mes' },
+                { value: 'historico', label: 'Histórico (Todo)' }
+              ]}
+            />
           </div>
         </div>
 
@@ -372,12 +373,12 @@ export const Informes = () => {
             </div>
           </div>
 
-          <div className="relative hover:z-50 transition-all bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-3xl shadow-lg border border-slate-700 text-white flex flex-col justify-between h-full">
+          <div className="relative hover:z-50 transition-all bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-lg border border-blue-500 text-white flex flex-col justify-between h-full">
             <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full mix-blend-overlay filter blur-[40px] opacity-10"></div>
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full mix-blend-overlay filter blur-[40px] opacity-20"></div>
             </div>
             <div className="flex justify-between items-start mb-2 relative z-10">
-               <p className="text-[10px] font-bold text-slate-300 tracking-widest uppercase">Rentabilidad</p>
+               <p className="text-[10px] font-bold text-blue-100 tracking-widest uppercase">Rentabilidad</p>
                <div className="relative group/tooltip">
                  <AlertCircle size={14} className="text-slate-400 cursor-help" />
                  <div className="absolute top-full right-0 mt-2 w-48 p-2 bg-white text-slate-800 text-xs rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 shadow-xl pointer-events-none text-center font-medium">

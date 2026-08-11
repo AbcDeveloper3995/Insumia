@@ -44,16 +44,27 @@ export const insumosService = {
   },
 
   /**
-   * Elimina un insumo
+   * Elimina un insumo (Físico si no tiene historial, Lógico si lo tiene)
    */
   async deleteInsumo(id) {
-    const { error } = await supabase
-      .from('insumos')
-      .delete()
-      .eq('id', id);
+    const { data, error } = await supabase.rpc('eliminar_insumo_seguro', {
+      p_insumo_id: id
+    });
       
     if (error) throw error;
-    return true;
+    return data;
+  },
+
+  /**
+   * Restaura un insumo archivado lógicamente
+   */
+  async restoreInsumo(id) {
+    const { data, error } = await supabase.rpc('restaurar_insumo', {
+      p_insumo_id: id
+    });
+      
+    if (error) throw error;
+    return data;
   },
 
   /**

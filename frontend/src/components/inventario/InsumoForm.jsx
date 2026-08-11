@@ -1,10 +1,11 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { UNIDADES } from '../../constants';
 import { useEffect, useState } from 'react';
 import { Lock, Unlock } from 'lucide-react';
+import { CustomSelect } from '../ui/CustomSelect';
 
 export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false }) => {
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     defaultValues: defaultValues || {
       nombre: '',
       unidad_compra: UNIDADES.KILOGRAMOS,
@@ -71,6 +72,24 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false }
   const mismaUnidad = unidadCompra === unidadBase;
 
   const handleFormSubmit = (data) => {
+    // Convert empty strings to null and parse numbers to prevent Postgres 22P02 error
+    const numericFields = [
+      'factor_conversion',
+      'costo_unidad_compra',
+      'porcentaje_rendimiento',
+      'cantidad_actual_base',
+      'umbral_minimo',
+      'dias_alerta_caducidad'
+    ];
+    
+    numericFields.forEach(field => {
+      if (data[field] === '' || data[field] === null || data[field] === undefined) {
+        data[field] = 0;
+      } else {
+        data[field] = Number(data[field]);
+      }
+    });
+
     // Si es misma unidad forzamos 1
     if (data.unidad_compra === data.unidad_base) {
       data.factor_conversion = 1;
@@ -96,14 +115,16 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false }
         <div className="flex flex-col">
           <label className="block text-sm font-bold text-slate-700 mb-1">Presentación de Compra</label>
           <span className="text-[11px] text-slate-500 block mb-2 font-medium leading-tight">¿Cómo se lo compras al proveedor?</span>
-          <select
-            {...register('unidad_compra')}
-            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium text-slate-800"
-          >
-            {Object.values(UNIDADES).map(u => (
-              <option key={`compra-${u}`} value={u}>{u.toUpperCase()}</option>
-            ))}
-          </select>
+          <Controller
+            name="unidad_compra"
+            control={control}
+            render={({ field }) => (
+              <CustomSelect
+                {...field}
+                options={Object.values(UNIDADES).map(u => ({ value: u, label: u.toUpperCase() }))}
+              />
+            )}
+          />
         </div>
 
         {/* Unidad de Uso */}
@@ -123,15 +144,17 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false }
             </button>
           </div>
           <span className="text-[11px] text-slate-500 block mb-2 font-medium leading-tight">¿Cómo lo mides para cocinar?</span>
-          <select
-            {...register('unidad_base')}
-            disabled={bloquearReceta}
-            className={`w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium ${bloquearReceta ? 'bg-slate-100 text-slate-500 cursor-not-allowed opacity-80' : 'bg-white text-slate-800'}`}
-          >
-            {Object.values(UNIDADES).map(u => (
-              <option key={`uso-${u}`} value={u}>{u.toUpperCase()}</option>
-            ))}
-          </select>
+          <Controller
+            name="unidad_base"
+            control={control}
+            render={({ field }) => (
+              <CustomSelect
+                {...field}
+                disabled={bloquearReceta}
+                options={Object.values(UNIDADES).map(u => ({ value: u, label: u.toUpperCase() }))}
+              />
+            )}
+          />
         </div>
       </div>
 
