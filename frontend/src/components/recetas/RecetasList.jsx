@@ -1,7 +1,7 @@
-import { ChefHat, Edit, Trash2, TrendingUp, AlertTriangle, Info, Calculator, Percent, PlusCircle, Layers } from 'lucide-react';
+import { ChefHat, Edit, Trash2, TrendingUp, AlertTriangle, Info, Calculator, Percent, PlusCircle, Layers, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export const RecetasList = ({ recetas, onEdit, onDelete, onViewResumen }) => {
+export const RecetasList = ({ recetas, onEdit, onDelete, onViewResumen, onPrepareLote }) => {
   if (!recetas || recetas.length === 0) {
     return (
       <div className="space-y-6">
@@ -143,6 +143,10 @@ export const RecetasList = ({ recetas, onEdit, onDelete, onViewResumen }) => {
                   Alerta
                 </div>
               )}
+              {/* Badge de Stock Actual */}
+              <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                Stock: {Number(receta.stock_actual || 0)}
+              </div>
             </div>
 
             {/* Contenido Ultra Compacto */}
@@ -209,12 +213,19 @@ export const RecetasList = ({ recetas, onEdit, onDelete, onViewResumen }) => {
               </span>
               <div className="flex space-x-1">
                 <button 
+                  onClick={() => onPrepareLote && onPrepareLote(receta)}
+                  className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold py-1 px-2 rounded-md text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-sm"
+                  title="Preparar lote de esta receta"
+                >
+                  <ArrowUpRight size={12} />
+                  Preparar
+                </button>
+                <button 
                   onClick={() => onViewResumen && onViewResumen(receta)}
-                  className="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold py-1 px-2 rounded-md text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer mr-1 shadow-sm"
+                  className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold py-1 px-2 rounded-md text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-sm"
                   title="Ver Desglose de Costo y Ganancia"
                 >
                   <Calculator size={12} className="text-blue-500" />
-                  Resumen
                 </button>
                 <button 
                   onClick={() => onEdit(receta)}

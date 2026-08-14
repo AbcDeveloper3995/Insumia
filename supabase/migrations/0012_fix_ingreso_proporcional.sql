@@ -165,7 +165,15 @@ BEGIN
         v_costo_ingrediente, 
         v_ingreso_proporcional, 
         v_venta_id, 
-        'Consumido en ' || (v_articulo->>'cantidad') || 'x ' || v_receta_nombre || ' (incluye subrecetas)'
+        'Consumido en ' || (v_articulo->>'cantidad') || 'x ' || v_receta_nombre || ' (incluye subrecetas)|META:' || 
+        jsonb_build_object(
+          'costo_receta_unitario', v_rec_costo_total,
+          'precio_venta_unitario', v_precio_venta,
+          'cantidad_vendida', (v_articulo->>'cantidad')::INTEGER,
+          'venta_total', v_precio_venta * (v_articulo->>'cantidad')::INTEGER,
+          'costo_insumo_total', v_costo_ingrediente,
+          'ingreso_proporcional', v_ingreso_proporcional
+        )::TEXT
       );
     END LOOP;
   END LOOP;

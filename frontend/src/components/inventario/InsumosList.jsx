@@ -178,7 +178,7 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onInitialPur
                 <span className={`text-2xl font-black 
                   ${needsPurchase ? 'text-slate-300' : (isBajoUmbral ? 'text-amber-600' : 'text-emerald-600')}
                 `}>
-                  {insumo.cantidad_actual_base}
+                  {Number(stockActual).toLocaleString('en-US', { maximumFractionDigits: 2 })}
                 </span>
                 <span className="ml-1.5 text-slate-500 font-semibold text-sm">{insumo.unidad_base}</span>
               </div>

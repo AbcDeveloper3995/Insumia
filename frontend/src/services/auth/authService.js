@@ -28,23 +28,18 @@ export const authService = {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          nombre,
+          apellidos,
+          telefono
+        }
+      }
     });
     
     if (authError) throw authError;
 
-    const { data: rpcData, error: rpcError } = await supabase.rpc('completar_perfil_usuario', {
-      p_nombre: nombre,
-      p_apellidos: apellidos,
-      p_telefono: telefono
-    });
-
-    if (rpcError) throw rpcError;
-
-    if (rpcData && !rpcData.success) {
-      throw new Error(rpcData.error || 'Error al completar perfil');
-    }
-
-    return { authData, rpcData };
+    return { authData };
   },
 
   /**

@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../ui/Loading';
 export const KardexModal = ({ insumo, onClose }) => {
   const [movimientos, setMovimientos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMath, setSelectedMath] = useState(null);
 
   useEffect(() => {
     const fetchKardex = async () => {
@@ -110,10 +111,14 @@ export const KardexModal = ({ insumo, onClose }) => {
                   <div className="flex items-start gap-3 relative z-10">
                       <Lightbulb className="text-indigo-500 mt-1 shrink-0" size={20} />
                       <div>
-                          <h4 className="text-indigo-900 font-bold mb-1">2. ¿Qué es el Ingreso Aportado?</h4>
-                          <p className="text-indigo-800/80 text-sm leading-relaxed">
-                              Esta tabla audita el <strong>Ingreso Bruto Aportado</strong>. Pasa el cursor sobre el ícono de información (i) junto al título del modal para ver una referencia matemática de la diferencia entre el Ingreso que ves aquí, y la Ganancia Neta Líquida que ves en el Resumen de Recetas.
+                          <h4 className="text-indigo-900 font-bold mb-1">2. ¿De dónde sale el Ingreso Aportado?</h4>
+                          <p className="text-indigo-800/80 text-sm leading-relaxed mb-3">
+                              Es la parte de la venta que le corresponde a este insumo. Si la harina representa el <strong>15% del costo</strong> de cocinar un plato, entonces la harina es responsable del <strong>15% del dinero</strong> que pagó el cliente.
                           </p>
+                          <div className="inline-flex bg-white px-3 py-2 rounded-lg border border-indigo-200 shadow-sm items-center gap-2">
+                               <span className="text-[11px] font-bold text-slate-500 font-mono tracking-wider">FÓRMULA:</span>
+                               <span className="text-[11px] font-bold text-indigo-700">(Costo del Insumo ÷ Costo de Receta) × Venta Total</span>
+                          </div>
                       </div>
                   </div>
               </div>
@@ -170,12 +175,15 @@ export const KardexModal = ({ insumo, onClose }) => {
                                             <td className="py-4 px-6 text-right">
                                                 {mov.tipo === 'venta' ? (
                                                     <div className="flex flex-col items-end">
-                                                        <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Aportó</span>
+                                                        <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold flex items-center gap-1.5 mb-0.5">
+                                                            Aportó
+                                                            <Info size={13} className="text-sky-500 cursor-pointer hover:text-sky-700 transition-colors" onClick={(e) => { e.stopPropagation(); setSelectedMath(mov); }} />
+                                                        </span>
                                                         <span className="text-sm font-black text-sky-600">+${Number(mov.ingreso_generado || 0).toFixed(2)}</span>
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col items-end">
-                                                        <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Costó</span>
+                                                        <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-0.5">Costó</span>
                                                         <span className="text-sm font-black text-slate-700">${Number(mov.costo_movimiento || 0).toFixed(2)}</span>
                                                     </div>
                                                 )}
@@ -190,6 +198,129 @@ export const KardexModal = ({ insumo, onClose }) => {
             </div>
         </div>
       </motion.div>
+
+      {/* Modal Matemático Explicativo */}
+      {selectedMath && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedMath(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                <div className="bg-gradient-to-r from-sky-50 to-indigo-50 px-8 py-5 border-b border-sky-100 flex justify-between items-center shrink-0">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                        <Lightbulb size={20} className="text-sky-500"/> Análisis de Ingreso Aportado
+                    </h3>
+                    <button onClick={() => setSelectedMath(null)} className="p-2 text-slate-400 hover:bg-white hover:shadow-sm hover:text-slate-700 rounded-full transition-all">
+                        <X size={20}/>
+                    </button>
+                </div>
+                
+                <div className="p-8 overflow-y-auto custom-scrollbar text-slate-700 space-y-6">
+                    {(() => {
+                        let notas = selectedMath.notas || '';
+                        let meta = null;
+                        
+                        // Parsear metadata oculta si existe
+                        if (notas.includes('|META:')) {
+                            try {
+                                const parts = notas.split('|META:');
+                                notas = parts[0];
+                                meta = JSON.parse(parts[1]);
+                            } catch (e) { console.error("Error parsing math meta:", e); }
+                        }
+
+                        // Extraer datos dinámicos básicos para fallback
+                        let receta = 'esta receta';
+                        let cant = 'varios';
+                        const matchReceta = notas.match(/Consumido en \d+x (.*?)( \(incluye subrecetas\))?$/);
+                        if (matchReceta) receta = matchReceta[1];
+                        const matchCant = notas.match(/Consumido en (\d+)x/);
+                        if (matchCant) cant = matchCant[1];
+
+                        const costoStr = Number(selectedMath.costo_movimiento).toFixed(2);
+                        const ingresoStr = Number(selectedMath.ingreso_generado).toFixed(2);
+
+                        if (meta) {
+                            // Cálculo exacto con todos los valores numéricos reales de la BD
+                            const propFloat = Number(meta.costo_insumo_total) / (Number(meta.costo_receta_unitario) * Number(meta.cantidad_vendida));
+                            const porcentaje = (propFloat * 100).toFixed(2);
+
+                            return (
+                                <>
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 text-base mb-2">1. ¿Cuánto costó el insumo que va en esta orden?</h4>
+                                        <p className="leading-relaxed">
+                                            Sabemos que en este movimiento, el insumo representó un costo de <strong className="text-slate-800">${costoStr}</strong> para la receta de <em>{receta}</em>.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 text-base mb-3">2. ¿Cuál es el costo total y la proporción?</h4>
+                                        <ul className="text-sm space-y-1.5 font-mono text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100 mb-3">
+                                            <li>Costo de {receta} (1x): ~${Number(meta.costo_receta_unitario).toFixed(2)}</li>
+                                            <li>Costo total de la orden ({cant}x): ~${(Number(meta.costo_receta_unitario) * Number(meta.cantidad_vendida)).toFixed(2)}</li>
+                                            <li className="pt-2 mt-2 border-t border-slate-200 text-indigo-700 font-bold">
+                                                Proporción: ${costoStr} / ${(Number(meta.costo_receta_unitario) * Number(meta.cantidad_vendida)).toFixed(2)} = {propFloat.toFixed(4)}
+                                            </li>
+                                        </ul>
+                                        <p className="leading-relaxed">
+                                            Esto significa que este insumo aporta el <strong className="text-slate-800">{porcentaje}%</strong> de la receta.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 text-base mb-2">3. Lo multiplicamos por la Venta Real</h4>
+                                        <p className="leading-relaxed mb-3">
+                                            Tú vendiste {cant} <em>{receta}</em>, cada uno a ${Number(meta.precio_venta_unitario).toFixed(2)}. Eso hizo entrar ${Number(meta.venta_total).toFixed(2)} a la caja. Como el insumo es responsable del {porcentaje}% de la receta, le damos el crédito correspondiente:
+                                        </p>
+                                        <div className="font-mono text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100 mb-4 text-center">
+                                            ${Number(meta.venta_total).toFixed(2)} x {propFloat.toFixed(4)} = <strong className="text-slate-800">${ingresoStr}</strong>
+                                        </div>
+                                        <div>
+                                            <span className="inline-flex px-3 py-1 bg-sky-100 text-sky-700 border border-sky-200 rounded-lg font-black text-sm tracking-wide">
+                                                +${ingresoStr}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </>
+                            );
+                        }
+
+                        // Fallback Text (Para ventas viejas que no tienen metadata guardada)
+                        return (
+                            <>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 text-base mb-2">1. ¿Cuánto costó el insumo que va en esta venta?</h4>
+                                    <p className="leading-relaxed">
+                                        Sabemos que en este movimiento, el insumo representó un costo exacto de <strong className="text-slate-800">${costoStr}</strong> para cocinar <strong>{cant}x {receta}</strong>. (Ese es el valor en dinero de este insumo que llevan estos platos).
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <h4 className="font-bold text-slate-800 text-base mb-2">2. ¿Cuál es el costo total y cómo calculamos la proporción?</h4>
+                                    <p className="leading-relaxed">
+                                        Para calcular el Ingreso Aportado, el sistema determinó qué porcentaje representan esos <strong className="text-slate-800">${costoStr}</strong> sobre el costo total de cocinar toda la orden de <strong>{receta}</strong>.
+                                    </p>
+                                    <p className="mt-2 bg-slate-50 p-3 rounded-xl text-sm border border-slate-100 text-slate-600 italic">
+                                        Por ejemplo: Si el plato costara $10 y este insumo representara $2 de ese costo, significaría que el insumo aporta el 20% de la receta.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <h4 className="font-bold text-slate-800 text-base mb-2">3. Lo multiplicamos por la Venta Real</h4>
+                                    <p className="leading-relaxed mb-3">
+                                        Al tomar ese porcentaje de responsabilidad y multiplicarlo por el dinero total que cobraste por la orden, el sistema le da el crédito a este insumo por la cantidad de:
+                                    </p>
+                                    <div>
+                                        <span className="inline-flex px-3 py-1 bg-sky-100 text-sky-700 border border-sky-200 rounded-lg font-black text-sm tracking-wide">
+                                            +${ingresoStr}
+                                        </span>
+                                    </div>
+                                </div>
+                            </>
+                        );
+                    })()}
+                </div>
+            </motion.div>
+        </div>
+      )}
     </div>
   );
 };

@@ -30,11 +30,11 @@ export const NotificationBell = ({ isSidebarExpanded }) => {
       const restauranteId = currentRestaurant?.id;
 
       // 1. Alertas de Stock
-      const insumos = await insumosService.getInsumos();
+      const insumos = currentRestaurant?.id ? await insumosService.getInsumos(currentRestaurant.id) : [];
       const stockAlerts = insumos?.filter(i => i.cantidad_actual_base <= i.umbral_minimo) || [];
 
       // 2. Alertas de Recetas (Margen < 50%)
-      const recetas = await recetasService.getRecetas();
+      const recetas = currentRestaurant?.id ? await recetasService.getRecetas(currentRestaurant.id) : [];
       const recetasAlerts = (recetas || []).filter(r => {
         const costo = (Number(r.costo_total) || 0) / (Number(r.rendimiento) || 1);
         const precio = Number(r.precio_venta) || 0;

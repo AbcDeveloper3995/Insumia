@@ -3,9 +3,11 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Plus, Trash2, Calculator, Info } from 'lucide-react';
 import { insumosService } from '../../services/api/insumos';
 import { recetasService } from '../../services/api/recetas';
+import { useAuth } from '../../context/AuthContext';
 import { CustomSelect } from '../ui/CustomSelect';
 
 export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }) => {
+  const { currentRestaurant } = useAuth();
   const [insumos, setInsumos] = useState([]);
   const [subrecetas, setSubrecetas] = useState([]);
   const [loadingDatos, setLoadingDatos] = useState(true);
@@ -46,8 +48,8 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
       try {
         setLoadingDatos(true);
         const [insumosData, recetasData] = await Promise.all([
-          insumosService.getInsumos(),
-          recetasService.getRecetas()
+          currentRestaurant?.id ? insumosService.getInsumos(currentRestaurant.id) : [],
+          currentRestaurant?.id ? recetasService.getRecetas(currentRestaurant.id) : []
         ]);
         setInsumos(insumosData || []);
         
@@ -204,7 +206,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
             No has agregado ningún ingrediente.
           </div>
         ) : (
-          <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+          <div className="flex flex-col gap-2">
             {fields.map((field, index) => {
               const currentItemId = watchIngredientes[index]?.item_id;
               const currentCantidad = watchIngredientes[index]?.cantidad_uso;
@@ -221,9 +223,9 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
               const costoDesglose = calcularCostoItem(currentItemId, currentCantidad);
 
               return (
-                <div key={field.id} className="bg-white p-4 border border-slate-200 rounded-lg shadow-sm">
-                  <div className="flex items-start space-x-3 mb-2">
-                    <div className="flex-1">
+                <div key={field.id} className="flex flex-col gap-2 bg-white p-3 border border-slate-200 rounded-xl shadow-sm relative group hover:border-blue-300 transition-all">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex-1 w-full sm:w-auto">
                       <Controller
                         name={`ingredientes.${index}.item_id`}
                         control={control}
@@ -266,37 +268,39 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                       />
                     </div>
                     
-                    <div className="w-32 relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Cant."
-                        {...register(`ingredientes.${index}.cantidad_uso`, { 
-                          required: true, 
-                          min: 0.01,
-                          onBlur: recalcularCostoTotal
-                        })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-sm pr-12"
-                      />
-                      <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">
-                        {unidadVisual}
-                      </span>
-                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <div className="w-24 relative shrink-0">
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="Cant."
+                          {...register(`ingredientes.${index}.cantidad_uso`, { 
+                            required: true, 
+                            min: 0.01,
+                            onBlur: recalcularCostoTotal
+                          })}
+                          className="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm pr-10 bg-white"
+                        />
+                        <span className="absolute right-3 top-2 text-xs text-slate-400 font-bold uppercase">
+                          {unidadVisual}
+                        </span>
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        remove(index);
-                        setTimeout(recalcularCostoTotal, 50); 
-                      }}
-                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors cursor-pointer shrink-0"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          remove(index);
+                          setTimeout(recalcularCostoTotal, 50); 
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer shrink-0 ml-auto sm:ml-0"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
-                  
+
                   {currentItemId && (
-                    <div className="flex items-center text-xs justify-end pr-12">
+                    <div className="flex items-center text-xs justify-end pr-10 pt-1 mt-1 border-t border-slate-100">
                       <span className="text-slate-400 mr-3 flex items-center gap-1">
                           Costo Base: 
                           <span className="font-semibold text-slate-500">
@@ -304,7 +308,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                           </span>
                       </span>
                       <span className="text-slate-500 mr-2 flex items-center gap-1">
-                          Costo de Insumo:
+                          Subtotal:
                           <div className="relative flex items-center group/tooltip">
                             <Info size={12} className="text-slate-400 hover:text-blue-500 cursor-help" />
                             <div className="absolute bottom-full right-0 mb-1.5 w-64 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] text-left pointer-events-none shadow-lg normal-case font-normal leading-tight">

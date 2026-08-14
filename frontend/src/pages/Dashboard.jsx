@@ -33,7 +33,7 @@ export const Dashboard = () => {
       try {
         setLoading(true);
         // 1. Cargar Insumos y Compras
-        const insumos = await insumosService.getInsumos();
+        const insumos = await insumosService.getInsumos(currentRestaurant?.id);
         
         const sessionRes = await supabase.auth.getSession();
         const user = sessionRes.data?.session?.user;
@@ -51,14 +51,14 @@ export const Dashboard = () => {
         });
         
         // 2. Cargar Recetas Activas (con precio de venta > 0)
-        const recetas = await recetasService.getRecetas();
+        const recetas = await recetasService.getRecetas(currentRestaurant?.id);
         const recetasActivas = recetas?.filter(r => !r.es_subreceta && Number(r.precio_venta) > 0) || [];
         
         // 3. Cargar Ventas de Hoy
-        const ventasHoyData = await ventasService.getVentasHoy();
+        const ventasHoyData = await ventasService.getVentasHoy(currentRestaurant?.id);
         
         // 4. Cargar Top Productos para Gráfico
-        const productosData = await ventasService.getVentasPorPlatillo();
+        const productosData = await ventasService.getVentasPorPlatillo(currentRestaurant?.id);
         // Tomar solo los top 5
         const top5 = [...productosData].sort((a, b) => b.cantidad - a.cantidad).slice(0, 5);
 
@@ -78,7 +78,8 @@ export const Dashboard = () => {
         const { data: movs } = await supabase
           .from('insumo_movimientos')
           .select('insumo_id, ingreso_generado, insumos(nombre)')
-          .eq('tipo', 'venta');
+          .eq('tipo', 'venta')
+          .eq('restaurante_id', currentRestaurant?.id);
         
         const rentabilidad = {};
         if (movs) {

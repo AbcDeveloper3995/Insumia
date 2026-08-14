@@ -23,13 +23,15 @@ export const ventasService = {
   /**
    * Obtiene todas las ventas de hoy (para KPI)
    */
-  async getVentasHoy() {
+  async getVentasHoy(restauranteId) {
+    if (!restauranteId) throw new Error('Se requiere el ID del restaurante');
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
     const { data, error } = await supabase
       .from('ventas')
       .select('id, created_at')
+      .eq('restaurante_id', restauranteId)
       .gte('created_at', hoy.toISOString());
 
     if (error) throw error;
@@ -39,7 +41,8 @@ export const ventasService = {
   /**
    * Obtiene el desglose de platillos vendidos para gráficos del Dashboard (histórico agrupado)
    */
-  async getVentasPorPlatillo() {
+  async getVentasPorPlatillo(restauranteId) {
+    if (!restauranteId) throw new Error('Se requiere el ID del restaurante');
     const { data, error } = await supabase
       .from('venta_detalles')
       .select(`
@@ -48,8 +51,12 @@ export const ventasService = {
         recetas (
           nombre,
           precio_venta
+        ),
+        ventas!inner (
+          restaurante_id
         )
-      `);
+      `)
+      .eq('ventas.restaurante_id', restauranteId);
 
     if (error) throw error;
 
@@ -71,7 +78,8 @@ export const ventasService = {
   /**
    * Obtiene datos planos de ventas con fechas para el módulo de Informes
    */
-  async getVentasReporte(startDate = null, endDate = null) {
+  async getVentasReporte(restauranteId, startDate = null, endDate = null) {
+    if (!restauranteId) throw new Error('Se requiere el ID del restaurante');
     let query = supabase
       .from('venta_detalles')
       .select(`
@@ -85,9 +93,11 @@ export const ventasService = {
         ventas!inner (
           id,
           created_at,
-          metodo_pago
+          metodo_pago,
+          restaurante_id
         )
-      `);
+      `)
+      .eq('ventas.restaurante_id', restauranteId);
 
     if (startDate) {
       query = query.gte('ventas.created_at', startDate.toISOString());

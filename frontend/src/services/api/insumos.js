@@ -4,10 +4,12 @@ export const insumosService = {
   /**
    * Obtiene la lista de insumos del restaurante
    */
-  async getInsumos() {
+  async getInsumos(restauranteId) {
+    if (!restauranteId) throw new Error('Se requiere el ID del restaurante');
     const { data, error } = await supabase
       .from('insumos')
       .select('*')
+      .eq('restaurante_id', restauranteId)
       .order('nombre');
       
     if (error) throw error;

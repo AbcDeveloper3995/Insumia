@@ -4,7 +4,8 @@ export const recetasService = {
   /**
    * Obtiene la lista de recetas (solo cabecera)
    */
-  async getRecetas() {
+  async getRecetas(restauranteId) {
+    if (!restauranteId) throw new Error('Se requiere el ID del restaurante');
     const { data, error } = await supabase
       .from('recetas')
       .select(`
@@ -15,6 +16,7 @@ export const recetasService = {
           insumo:insumos(id, nombre, costo_unidad_compra, factor_conversion, porcentaje_rendimiento, unidad_base)
         )
       `)
+      .eq('restaurante_id', restauranteId)
       .order('nombre');
       
     if (error) throw error;
@@ -195,5 +197,22 @@ export const recetasService = {
       
     if (error) throw error;
     return true;
+  },
+
+  /**
+   * Prepara una receta/subreceta, descontando ingredientes y sumando stock
+   */
+  async prepararReceta(restauranteId, recetaId, cantidad) {
+    if (!restauranteId) throw new Error('Se requiere el ID del restaurante');
+    const { data, error } = await supabase.rpc('preparar_receta', {
+      p_restaurante_id: restauranteId,
+      p_receta_id: recetaId,
+      p_cantidad: Number(cantidad)
+    });
+
+    if (error) throw error;
+    if (data && data.success === false) throw new Error(data.error);
+    
+    return data;
   }
 };

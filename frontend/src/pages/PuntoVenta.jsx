@@ -38,7 +38,7 @@ export const PuntoVenta = () => {
           const caja = await cajaService.getCajaAbierta(restauranteId);
           setCajaActiva(caja);
 
-          const data = await recetasService.getRecetas();
+          const data = await recetasService.getRecetas(restauranteId);
           const platillos = data?.filter(r => !r.es_subreceta && Number(r.precio_venta) > 0) || [];
           setRecetas(platillos);
         }
@@ -57,10 +57,21 @@ export const PuntoVenta = () => {
   }, [recetas, searchTerm]);
 
   const agregarAlCarrito = (receta) => {
+    const stock = Number(receta.stock_actual || 0);
+    
+    if (stock <= 0) {
+      toast.error(`No hay unidades preparadas de ${receta.nombre}`);
+      return;
+    }
+
     setVentaExitosa(false);
     setCarrito(prev => {
       const existe = prev.find(item => item.receta.id === receta.id);
       if (existe) {
+        if (existe.cantidad >= stock) {
+          toast.error(`Solo tienes ${stock} preparadas de ${receta.nombre}`);
+          return prev;
+        }
         return prev.map(item => 
           item.receta.id === receta.id 
             ? { ...item, cantidad: item.cantidad + 1, total: (item.cantidad + 1) * Number(receta.precio_venta) }
@@ -75,7 +86,15 @@ export const PuntoVenta = () => {
     setCarrito(prev => {
       return prev.map(item => {
         if (item.receta.id === recetaId) {
-          const nuevaCant = Math.max(1, item.cantidad + delta);
+          let nuevaCant = item.cantidad + delta;
+          const stock = Number(item.receta.stock_actual || 0);
+          
+          if (nuevaCant > stock) {
+            toast.error(`Solo tienes ${stock} unidades de ${item.receta.nombre}`);
+            nuevaCant = stock;
+          }
+          
+          nuevaCant = Math.max(1, nuevaCant);
           return { ...item, cantidad: nuevaCant, total: nuevaCant * Number(item.receta.precio_venta) };
         }
         return item;
@@ -217,7 +236,11 @@ export const PuntoVenta = () => {
                   
                   <div className="relative z-10 w-full">
                     <h3 className="font-bold text-slate-800 text-lg leading-tight line-clamp-2 tracking-tight group-hover:text-blue-600 transition-colors mb-1">{platillo.nombre}</h3>
-                    <p className="text-xs font-semibold text-slate-400 mb-4 line-clamp-1">Listo para preparar</p>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md ${Number(platillo.stock_actual) > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                        {Number(platillo.stock_actual || 0)} Preparados
+                      </span>
+                    </div>
                     <div className="flex items-end justify-between w-full mt-4 border-t border-slate-50 pt-4">
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Precio</p>

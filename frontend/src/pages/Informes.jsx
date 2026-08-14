@@ -75,8 +75,8 @@ export const Informes = () => {
         
         if (currentRestaurant?.id) {
           const [productosData, recetas, mermasData] = await Promise.all([
-            ventasService.getVentasReporte(startDate, dateFilter === 'historico' ? null : endDate),
-            recetasService.getRecetas(),
+            ventasService.getVentasReporte(currentRestaurant.id, startDate, dateFilter === 'historico' ? null : endDate),
+            recetasService.getRecetas(currentRestaurant.id),
             mermasService.getMermas(currentRestaurant.id)
           ]);
 

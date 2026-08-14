@@ -7,6 +7,7 @@ import { RecetasList } from '../components/recetas/RecetasList';
 import { Modal } from '../components/common/Modal';
 import { RecetaForm } from '../components/recetas/RecetaForm';
 import { RecetaResumenModal } from '../components/recetas/RecetaResumenModal';
+import { PrepararLoteModal } from '../components/recetas/PrepararLoteModal';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
 
@@ -23,14 +24,15 @@ export const Recetas = () => {
   // Estado para modal de confirmación de eliminación
   const [recetaToDelete, setRecetaToDelete] = useState(null);
   const [selectedResumenReceta, setSelectedResumenReceta] = useState(null);
+  const [recetaToPrepare, setRecetaToPrepare] = useState(null);
 
 
   const loadRecetas = async () => {
     try {
       setLoading(true);
       const [dataRecetas, dataInsumos] = await Promise.all([
-        recetasService.getRecetas(),
-        insumosService.getInsumos()
+        currentRestaurant?.id ? recetasService.getRecetas(currentRestaurant?.id) : [],
+        currentRestaurant?.id ? insumosService.getInsumos(currentRestaurant?.id) : []
       ]);
       setRecetas(dataRecetas || []);
       setInsumos(dataInsumos || []);
@@ -175,6 +177,7 @@ export const Recetas = () => {
             onEdit={handleOpenModal}
             onDelete={handleDeleteRequest} 
             onViewResumen={handleOpenResumen}
+            onPrepareLote={(receta) => setRecetaToPrepare(receta)}
           />
         )}
         </div>
@@ -269,6 +272,17 @@ export const Recetas = () => {
           insumos={insumos}
           recetas={recetas}
           onClose={() => setSelectedResumenReceta(null)}
+        />
+      )}
+
+      {recetaToPrepare && (
+        <PrepararLoteModal
+          receta={recetaToPrepare}
+          onClose={() => setRecetaToPrepare(null)}
+          onSuccess={() => {
+            setRecetaToPrepare(null);
+            loadRecetas(); // Recargar la lista para mostrar el nuevo stock
+          }}
         />
       )}
     </div>

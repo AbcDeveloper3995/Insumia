@@ -44,7 +44,7 @@ export const Inventario = () => {
       setLoading(true);
       setErrorCarga(null);
       
-      const insumosData = await insumosService.getInsumos();
+      const insumosData = currentRestaurant?.id ? await insumosService.getInsumos(currentRestaurant?.id) : [];
       setInsumos(insumosData || []);
       
       if (session?.user?.id) {
@@ -58,7 +58,7 @@ export const Inventario = () => {
             const mermasData = await mermasService.getMermas(currentRestaurant?.id);
             setMermas(mermasData || []);
 
-            const recetasData = await recetasService.getRecetas();
+            const recetasData = await recetasService.getRecetas(currentRestaurant?.id);
             setRecetas(recetasData || []);
          }
       }
@@ -116,7 +116,7 @@ export const Inventario = () => {
         setCreatedInsumo(newInsumo);
         setModalStep(2);
         // Recargamos silenciosamente los insumos para que la tabla de fondo se actualice
-        const insumosList = await insumosService.getInsumos();
+        const insumosList = currentRestaurant?.id ? await insumosService.getInsumos(currentRestaurant?.id) : [];
         setInsumos(insumosList || []);
       }
       
