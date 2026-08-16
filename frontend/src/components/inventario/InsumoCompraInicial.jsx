@@ -41,6 +41,7 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
     if (!proveedorId) return alert('Selecciona o crea un proveedor');
     if (!cantidad || Number(cantidad) <= 0) return alert('Ingresa una cantidad válida');
     if (!costoTotal || Number(costoTotal) < 0) return alert('Ingresa un costo válido');
+    if (!fechaCaducidad || fechaCaducidad.trim() === '') return alert('Ingresa una fecha de caducidad');
     
     onSubmit({
       proveedor_id: proveedorId,
@@ -144,7 +145,7 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
 
           <div className="col-span-2 md:col-span-1">
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              Caducidad (Opcional)
+              Caducidad
             </label>
             <input
               type="date"
@@ -192,8 +193,8 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
           
           <button
             type="submit"
-            disabled={isLoading || isCreatingProvider}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all disabled:opacity-50 shadow-sm cursor-pointer"
+            disabled={isLoading || isCreatingProvider || !proveedorId || !cantidad || !costoTotal || !fechaCaducidad}
+            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm cursor-pointer"
           >
             <ShoppingCart size={18} />
             {isLoading ? 'Registrando...' : 'Registrar Compra'}

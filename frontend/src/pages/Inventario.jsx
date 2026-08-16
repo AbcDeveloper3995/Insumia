@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { insumosService } from '../services/api/insumos';
 import { comprasService } from '../services/api/compras';
@@ -35,6 +36,7 @@ export const Inventario = () => {
   const [modalStep, setModalStep] = useState(1); // 1 = form insumo, 2 = compra inicial
   const [editingInsumo, setEditingInsumo] = useState(null);
   const [createdInsumo, setCreatedInsumo] = useState(null);
+  const [eliminandoInsumo, setEliminandoInsumo] = useState(null);
   const [selectedKardexInsumo, setSelectedKardexInsumo] = useState(null);
   
   const [errorCarga, setErrorCarga] = useState(null);
@@ -167,26 +169,25 @@ export const Inventario = () => {
       }
   };
 
-  const handleDelete = async (insumo) => {
-    const isConfirmed = window.confirm(
-      `¿Estás seguro de que deseas eliminar el insumo "${insumo.nombre}"?\n\n` +
-      `ADVERTENCIA CRÍTICA: Si este insumo forma parte de alguna receta, será eliminado de la misma automáticamente y podría afectar los costos de tus platillos.`
-    );
-    
-    if (!isConfirmed) return;
-
+  const confirmEliminarInsumo = async () => {
+    if (!eliminandoInsumo) return;
     try {
-      const res = await insumosService.deleteInsumo(insumo.id);
+      const res = await insumosService.deleteInsumo(eliminandoInsumo.id);
       if (res?.action === 'archived') {
         toast.success('Insumo archivado. (Aún forma parte del historial o recetas)');
       } else {
         toast.success('Insumo eliminado por completo');
       }
+      setEliminandoInsumo(null);
       await loadData();
     } catch (error) {
       console.error('Error eliminando:', error);
       toast.error('Error al eliminar el insumo');
     }
+  };
+
+  const handleDelete = (insumo) => {
+    setEliminandoInsumo(insumo);
   };
 
   const handleRestore = async (insumo) => {
@@ -239,6 +240,13 @@ export const Inventario = () => {
       </div>
     </div>
   );
+
+  // Variantes de animación
+  const modalVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } },
+    exit: { opacity: 0, scale: 0.95, y: 20, transition: { duration: 0.2 } }
+  };
 
   return (
     <div className="flex h-full w-full bg-slate-50 overflow-hidden rounded-2xl border border-slate-200/60 shadow-sm">
@@ -369,6 +377,54 @@ export const Inventario = () => {
           onSubmit={handleMermaSubmit}
         />
       )}
+
+      {/* Modal de Confirmación de Eliminación */}
+      <AnimatePresence>
+        {eliminandoInsumo && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+              onClick={() => setEliminandoInsumo(null)}
+            />
+            <motion.div 
+              variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+              className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full overflow-hidden relative z-10 text-center p-8"
+            >
+              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-red-100">
+                <AlertTriangle size={36} strokeWidth={2.5} />
+              </div>
+              
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">
+                ¿Eliminar Insumo?
+              </h2>
+              
+              <p className="text-slate-500 font-medium leading-relaxed mb-1">
+                Estás a punto de borrar <span className="font-bold text-slate-800">"{eliminandoInsumo.nombre}"</span>.
+              </p>
+              <p className="text-sm text-slate-400 mb-8 px-4">
+                ADVERTENCIA CRÍTICA: Si este insumo forma parte de alguna receta, será eliminado de la misma automáticamente y podría afectar los costos de tus platillos.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={confirmEliminarInsumo}
+                  className="w-full bg-red-500 text-white py-4 rounded-2xl hover:bg-red-600 transition-all font-bold cursor-pointer shadow-[0_8px_20px_rgb(239,68,68,0.25)] hover:shadow-[0_12px_25px_rgb(239,68,68,0.35)] active:scale-95 flex items-center justify-center"
+                >
+                  Sí, eliminar definitivamente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEliminandoInsumo(null)}
+                  className="w-full bg-transparent text-slate-500 py-3 rounded-2xl hover:bg-slate-50 hover:text-slate-700 transition-all font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

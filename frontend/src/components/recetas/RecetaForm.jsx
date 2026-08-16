@@ -13,7 +13,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
   const [loadingDatos, setLoadingDatos] = useState(true);
   const [costoCalculado, setCostoCalculado] = useState(0);
 
-  const { register, control, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm({
+  const { register, control, handleSubmit, watch, setValue, getValues, formState: { errors, isValid } } = useForm({
     defaultValues: defaultValues || {
       nombre: '',
       tipo: 'platillo',
@@ -22,7 +22,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
       costo_total: 0,
       ingredientes: []
     },
-    mode: 'onBlur'
+    mode: 'onChange'
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -128,11 +128,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
   }
 
   const isFormValid = Boolean(
-    formValues.nombre?.trim() &&
-    formValues.precio_venta !== '' &&
-    formValues.precio_venta !== undefined &&
-    watchIngredientes.length > 0 &&
-    watchIngredientes.every(ing => ing.item_id && Number(ing.cantidad_uso) > 0)
+    isValid && watchIngredientes.length > 0
   );
 
   return (

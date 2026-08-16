@@ -5,7 +5,8 @@ import { Lock, Unlock } from 'lucide-react';
 import { CustomSelect } from '../ui/CustomSelect';
 
 export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false }) => {
-  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+  const { register, control, handleSubmit, watch, setValue, formState: { errors, isValid } } = useForm({
+    mode: 'onChange',
     defaultValues: defaultValues || {
       nombre: '',
       unidad_compra: UNIDADES.KILOGRAMOS,
@@ -244,8 +245,8 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false }
       <div className="pt-6 border-t border-slate-200 flex justify-end">
         <button
           type="submit"
-          disabled={isLoading}
-          className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold disabled:opacity-50 cursor-pointer shadow-sm hover:shadow-md active:scale-95"
+          disabled={isLoading || !isValid}
+          className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow-md active:scale-95"
         >
           {isLoading ? 'Guardando...' : 'Guardar Insumo'}
         </button>

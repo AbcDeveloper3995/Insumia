@@ -18,7 +18,7 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
   const isFormValid = Boolean(
     proveedorId &&
     carrito.length > 0 &&
-    carrito.every(item => item.cantidad > 0 && item.costo_total >= 0)
+    carrito.every(item => item.cantidad > 0 && item.costo_total >= 0 && item.fecha_caducidad && item.fecha_caducidad.trim() !== '')
   );
 
   const agregarAlCarrito = (insumo) => {
@@ -163,7 +163,7 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
                     </div>
                     <div className="col-span-2 md:col-span-1">
                       <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">
-                        Caducidad (Opcional)
+                        Caducidad
                       </label>
                       <input 
                         type="date" 

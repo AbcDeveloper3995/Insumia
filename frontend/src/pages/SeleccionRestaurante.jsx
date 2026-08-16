@@ -14,6 +14,7 @@ export const SeleccionRestaurante = () => {
   const [eliminando, setEliminando] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [nombreForm, setNombreForm] = useState('');
 
   useEffect(() => {
     if (!session) {
@@ -31,7 +32,7 @@ export const SeleccionRestaurante = () => {
     setError(null);
     setLoading(true);
 
-    const nombre = e.target.nombre.value;
+    const nombre = nombreForm;
 
     try {
       const res = await authService.createRestaurant(nombre);
@@ -39,6 +40,7 @@ export const SeleccionRestaurante = () => {
       
       toast.success('Restaurante creado exitosamente');
       setCreando(false);
+      setNombreForm('');
       
       selectRestaurant({ id: res.restaurante_id, nombre });
       navigate('/');
@@ -54,13 +56,14 @@ export const SeleccionRestaurante = () => {
     setError(null);
     setLoading(true);
 
-    const nombre = e.target.nombre.value;
+    const nombre = nombreForm;
 
     try {
       await authService.updateRestaurant(editando.id, nombre);
       await refreshRestaurants();
       toast.success('Restaurante actualizado exitosamente');
       setEditando(null);
+      setNombreForm('');
     } catch (err) {
       setError(err.message || 'Error al actualizar restaurante');
     } finally {
@@ -179,7 +182,7 @@ export const SeleccionRestaurante = () => {
                     <span className="text-xs text-slate-500 font-semibold">Administrar local</span>
                     <div className="flex gap-2">
                       <button
-                        onClick={(e) => { e.stopPropagation(); setEditando(rest); }}
+                        onClick={(e) => { e.stopPropagation(); setEditando(rest); setNombreForm(rest.nombre); }}
                         className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
                         title="Editar"
                       >
@@ -202,7 +205,7 @@ export const SeleccionRestaurante = () => {
             {/* Tarjeta de Agregar Nuevo */}
             <motion.div variants={itemVariants}>
               <button
-                onClick={() => setCreando(true)}
+                onClick={() => { setCreando(true); setNombreForm(''); }}
                 className="w-full h-full min-h-[140px] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 p-6 flex flex-col items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group"
               >
                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm border border-slate-100 group-hover:bg-blue-500 group-hover:border-blue-500 transition-colors">
@@ -226,7 +229,7 @@ export const SeleccionRestaurante = () => {
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-              onClick={() => { setCreando(false); setEditando(null); setError(null); }}
+              onClick={() => { setCreando(false); setEditando(null); setError(null); setNombreForm(''); }}
             />
             <motion.div 
               variants={modalVariants} initial="hidden" animate="visible" exit="exit"
@@ -243,7 +246,7 @@ export const SeleccionRestaurante = () => {
                     </p>
                   </div>
                   <button
-                    onClick={() => { setCreando(false); setEditando(null); setError(null); }}
+                    onClick={() => { setCreando(false); setEditando(null); setError(null); setNombreForm(''); }}
                     className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 p-2 rounded-full cursor-pointer"
                   >
                     <X size={20} strokeWidth={2.5} />
@@ -265,7 +268,8 @@ export const SeleccionRestaurante = () => {
                     <input
                       type="text"
                       name="nombre"
-                      defaultValue={editando ? editando.nombre : ''}
+                      value={nombreForm}
+                      onChange={(e) => setNombreForm(e.target.value)}
                       required
                       autoFocus
                       className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300 text-lg"
@@ -276,15 +280,15 @@ export const SeleccionRestaurante = () => {
                   <div className="flex space-x-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => { setCreando(false); setEditando(null); setError(null); }}
+                      onClick={() => { setCreando(false); setEditando(null); setError(null); setNombreForm(''); }}
                       className="flex-1 bg-white border-2 border-slate-100 text-slate-600 py-4 rounded-2xl hover:bg-slate-50 hover:border-slate-200 transition-all font-bold cursor-pointer"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      disabled={loading}
-                      className="flex-1 bg-blue-600 text-white py-4 rounded-2xl hover:bg-blue-700 transition-all font-bold disabled:opacity-50 cursor-pointer shadow-[0_8px_20px_rgb(37,99,235,0.25)] hover:shadow-[0_12px_25px_rgb(37,99,235,0.35)] active:scale-95 flex items-center justify-center"
+                      disabled={loading || !nombreForm.trim()}
+                      className="flex-1 bg-blue-600 text-white py-4 rounded-2xl hover:bg-blue-700 transition-all font-bold disabled:opacity-50 cursor-pointer shadow-[0_8px_20px_rgb(37,99,235,0.25)] hover:shadow-[0_12px_25px_rgb(37,99,235,0.35)] active:scale-95 flex items-center justify-center disabled:cursor-not-allowed disabled:shadow-none"
                     >
                       {loading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

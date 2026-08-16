@@ -90,8 +90,8 @@ export const PrepararLoteModal = ({ receta, onClose, onSuccess }) => {
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50 flex justify-center items-center gap-2"
+              disabled={loading || !cantidad || cantidad <= 0}
+              className="flex-1 px-4 py-2 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 cursor-pointer"
             >
               <ArrowUpRight size={18} />
               {loading ? 'Procesando...' : 'Confirmar Producción'}

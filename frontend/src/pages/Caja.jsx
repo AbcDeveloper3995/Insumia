@@ -396,12 +396,12 @@ export const Caja = () => {
                   <label className="block text-sm font-semibold text-slate-700 mb-1">
                       {showModal === 'cerrar' ? 'Notas / Discrepancias' : 'Concepto'}
                   </label>
-                  <input type="text" required={showModal === 'movimiento'} value={formData.concepto} onChange={e => setFormData({...formData, concepto: e.target.value})} placeholder={showModal === 'abrir' ? 'Ej. Jornada Matutina' : ''} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="text" required value={formData.concepto} onChange={e => setFormData({...formData, concepto: e.target.value})} placeholder={showModal === 'abrir' ? 'Ej. Jornada Matutina' : ''} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                </div>
 
                <div className="flex items-center gap-3 mt-8">
                   <button type="button" onClick={() => setShowModal(null)} className="flex-1 bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors cursor-pointer">Cancelar</button>
-                  <button type="submit" className={`flex-1 text-white px-4 py-3 rounded-xl font-bold shadow-md transition-colors cursor-pointer ${showModal === 'cerrar' ? 'bg-[#D32F2F] hover:bg-[#C62828]' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                  <button type="submit" disabled={!formData.monto || !formData.concepto.trim()} className={`flex-1 text-white px-4 py-3 rounded-xl font-bold shadow-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${showModal === 'cerrar' ? 'bg-[#D32F2F] hover:bg-[#C62828]' : 'bg-blue-600 hover:bg-blue-700'}`}>
                       {showModal === 'abrir' ? 'Abrir Caja' : showModal === 'cerrar' ? 'Confirmar Cierre' : 'Guardar'}
                   </button>
                </div>

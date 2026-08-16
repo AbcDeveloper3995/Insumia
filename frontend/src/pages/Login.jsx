@@ -6,18 +6,16 @@ export const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    let userIdentifier = e.target.email.value;
-
-    const password = e.target.password.value;
-
     try {
-      await authService.signIn(userIdentifier, password);
+      await authService.signIn(email, password);
       navigate('/');
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión');
@@ -47,6 +45,8 @@ export const Login = () => {
             <input
               type="email"
               name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
               placeholder="tu@correo.com"
@@ -59,6 +59,8 @@ export const Login = () => {
             <input
               type="password"
               name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
               placeholder="••••••••"
@@ -66,8 +68,8 @@ export const Login = () => {
           </div>
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50"
+            disabled={loading || !email.trim() || !password.trim()}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Cargando...' : 'Entrar'}
           </button>
