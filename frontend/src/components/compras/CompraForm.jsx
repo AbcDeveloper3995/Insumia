@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { ShoppingCart, Plus, X, Search, Trash2, Info } from 'lucide-react';
+import { ShoppingCart, Plus, X, Search, Trash2, Info, Settings2 } from 'lucide-react';
 import { CustomSelect } from '../ui/CustomSelect';
+import { UNIDADES } from '../../constants';
 
 export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoading = false }) => {
   const [proveedorId, setProveedorId] = useState('');
@@ -18,30 +19,54 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
   const isFormValid = Boolean(
     proveedorId &&
     carrito.length > 0 &&
-    carrito.every(item => item.cantidad > 0 && item.costo_total >= 0 && item.fecha_caducidad && item.fecha_caducidad.trim() !== '')
+    carrito.every(item => {
+      const isCantidadValid = Number(item.cantidad) > 0;
+      const isCostoValid = Number(item.costo_total) >= 0;
+      const isFechaValid = item.fecha_caducidad && String(item.fecha_caducidad).trim() !== '';
+      
+      const validCompra = isCantidadValid && isCostoValid && isFechaValid;
+
+      if (item.isNew) {
+        return validCompra && 
+               item.insumo.nombre.trim() !== '' &&
+               Number(item.insumo.factor_conversion) > 0 && 
+               Number(item.insumo.porcentaje_rendimiento) > 0 && 
+               Number(item.insumo.umbral_minimo) >= 0 &&
+               Number(item.insumo.dias_alerta_caducidad) >= 0;
+      }
+      return validCompra;
+    })
   );
 
-  const agregarAlCarrito = (insumo) => {
-    if (carrito.find(item => item.insumo.id === insumo.id)) return;
+  const agregarAlCarrito = (insumo, isNew = false) => {
+    if (!isNew && carrito.find(item => item.insumo.id === insumo.id)) return;
+    const tempId = isNew ? 'temp_' + Date.now() + Math.random() : null;
     setCarrito([...carrito, { 
+      isNew,
+      tempId,
       insumo, 
       cantidad: 1, 
-      costo_total: insumo.ultimo_costo_base ? (insumo.ultimo_costo_base * insumo.factor_conversion) : 0 
+      costo_total: insumo.ultimo_costo_base ? (insumo.ultimo_costo_base * insumo.factor_conversion) : 0,
+      fecha_caducidad: ''
     }]);
     setInsumoSearch('');
   };
 
-  const updateCarrito = (insumoId, field, value) => {
+  const updateCarrito = (insumoId, field, value, isNewField = false) => {
     setCarrito(carrito.map(item => {
-      if (item.insumo.id === insumoId) {
+      const isMatch = item.isNew ? item.tempId === insumoId : item.insumo.id === insumoId;
+      if (isMatch) {
+        if (isNewField) {
+           return { ...item, insumo: { ...item.insumo, [field]: value } };
+        }
         return { ...item, [field]: field === 'fecha_caducidad' ? value : Number(value) };
       }
       return item;
     }));
   };
 
-  const removeCarrito = (insumoId) => {
-    setCarrito(carrito.filter(item => item.insumo.id !== insumoId));
+  const removeCarrito = (insumoId, isNew = false) => {
+    setCarrito(carrito.filter(item => isNew ? item.tempId !== insumoId : item.insumo.id !== insumoId));
   };
 
   const handleSubmit = (e) => {
@@ -77,15 +102,35 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
         {/* 2. Buscador y Lista de Insumos */}
         <div className="flex-1 flex flex-col min-h-0 bg-slate-50 border border-slate-200 rounded-xl p-4">
           <label className="block text-sm font-bold text-slate-700 mb-2">Añadir Insumos</label>
-          <div className="relative mb-3 shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input 
-              type="text" 
-              placeholder="Buscar insumo..." 
-              value={insumoSearch} 
-              onChange={e => setInsumoSearch(e.target.value)} 
-              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
-            />
+          <div className="flex gap-2 mb-3 shrink-0">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input 
+                type="text" 
+                placeholder="Buscar insumo..." 
+                value={insumoSearch} 
+                onChange={e => setInsumoSearch(e.target.value)} 
+                className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-inner" 
+              />
+            </div>
+            <button 
+              type="button"
+              onClick={() => {
+                agregarAlCarrito({
+                  nombre: '',
+                  unidad_compra: UNIDADES.KILOGRAMOS,
+                  unidad_base: UNIDADES.GRAMOS,
+                  factor_conversion: 1000,
+                  porcentaje_rendimiento: 100,
+                  umbral_minimo: 0,
+                  dias_alerta_caducidad: 7
+                }, true);
+              }}
+              className="px-3 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-100 flex items-center justify-center font-bold shadow-sm transition-colors cursor-pointer"
+              title="Registrar Nuevo Producto"
+            >
+              <Plus size={16} className="mr-1" /> Nuevo
+            </button>
           </div>
           
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
@@ -105,7 +150,7 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
                 </div>
               );
             })}
-            {filteredInsumos.length === 0 && <p className="text-slate-400 text-xs text-center py-4">No se encontraron insumos.</p>}
+            {filteredInsumos.length === 0 && <p className="text-slate-400 text-xs text-center py-4">Busca un insumo para agregarlo o presiona "Nuevo".</p>}
           </div>
         </div>
 
@@ -122,16 +167,38 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
                 <p className="text-sm">Agrega insumos a la factura</p>
               </div>
             ) : (
-              carrito.map(item => (
-                <div key={item.insumo.id} className="bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col gap-3">
+              carrito.map((item, index) => {
+                const uniqueId = item.isNew ? item.tempId : item.insumo.id;
+                return (
+                <div key={uniqueId || index} className={`border p-3 rounded-lg flex flex-col gap-3 ${item.isNew ? 'bg-indigo-50/30 border-indigo-200' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-bold text-sm text-slate-800">{item.insumo.nombre}</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        <span className="font-semibold">1 {item.insumo.unidad_compra}</span> = {item.insumo.factor_conversion} {item.insumo.unidad_base}
-                      </p>
+                    <div className="flex-1 mr-4">
+                      {item.isNew ? (
+                        <div className="flex flex-col gap-1.5 w-full">
+                          <input 
+                            type="text"
+                            placeholder="Nombre del nuevo insumo..."
+                            value={item.insumo.nombre}
+                            onChange={(e) => updateCarrito(uniqueId, 'nombre', e.target.value, true)}
+                            autoFocus
+                            className="font-bold text-sm text-slate-800 bg-white border border-indigo-200 rounded px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none w-full shadow-inner"
+                          />
+                          <div className="flex items-center">
+                            <span className="bg-indigo-100 text-indigo-700 text-[9px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wider inline-block">Nuevo Insumo</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            {item.insumo.nombre}
+                          </p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            <span className="font-semibold">1 {item.insumo.unidad_compra}</span> = {item.insumo.factor_conversion} {item.insumo.unidad_base}
+                          </p>
+                        </>
+                      )}
                     </div>
-                    <button type="button" onClick={() => removeCarrito(item.insumo.id)} className="text-slate-400 hover:text-red-500 transition-colors p-1"><Trash2 size={16}/></button>
+                    <button type="button" onClick={() => removeCarrito(uniqueId, item.isNew)} className="text-slate-400 hover:text-red-500 transition-colors p-1 shrink-0"><Trash2 size={16}/></button>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -143,8 +210,8 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
                         type="number" 
                         min="0.01" 
                         step="0.01" 
-                        value={item.cantidad} 
-                        onChange={e => updateCarrito(item.insumo.id, 'cantidad', e.target.value)} 
+                        value={item.cantidad || ''} 
+                        onChange={e => updateCarrito(uniqueId, 'cantidad', e.target.value)} 
                         className="w-full bg-white border border-slate-300 px-3 py-2 rounded text-slate-800 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
                       />
                     </div>
@@ -156,8 +223,8 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
                         type="number" 
                         min="0" 
                         step="0.01" 
-                        value={item.costo_total} 
-                        onChange={e => updateCarrito(item.insumo.id, 'costo_total', e.target.value)} 
+                        value={item.costo_total === 0 ? '' : item.costo_total} 
+                        onChange={e => updateCarrito(uniqueId, 'costo_total', e.target.value)} 
                         className="w-full bg-white border border-slate-300 px-3 py-2 rounded text-slate-800 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
                       />
                     </div>
@@ -168,19 +235,89 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
                       <input 
                         type="date" 
                         value={item.fecha_caducidad || ''} 
-                        onChange={e => updateCarrito(item.insumo.id, 'fecha_caducidad', e.target.value)} 
+                        onChange={e => updateCarrito(uniqueId, 'fecha_caducidad', e.target.value)} 
                         className="w-full bg-white border border-slate-300 px-3 py-2 rounded text-slate-800 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center" 
                       />
                     </div>
                   </div>
                   
+                  {item.isNew && (
+                    <div className="mt-2 bg-white rounded-lg border border-indigo-100 p-3 shadow-sm">
+                      <h4 className="text-xs font-bold text-indigo-700 mb-3 flex items-center gap-1.5 uppercase tracking-wide">
+                         <Settings2 size={14} /> Configuración Inicial
+                      </h4>
+                      
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                           <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Unidad Compra</label>
+                           <select 
+                             value={item.insumo.unidad_compra}
+                             onChange={(e) => updateCarrito(uniqueId, 'unidad_compra', e.target.value, true)}
+                             className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded text-slate-800 text-xs focus:border-indigo-500 focus:bg-white outline-none"
+                           >
+                             {Object.values(UNIDADES).map(u => <option key={u} value={u}>{u}</option>)}
+                           </select>
+                        </div>
+                        <div>
+                           <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Unidad Receta</label>
+                           <select 
+                             value={item.insumo.unidad_base}
+                             onChange={(e) => updateCarrito(uniqueId, 'unidad_base', e.target.value, true)}
+                             className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded text-slate-800 text-xs focus:border-indigo-500 focus:bg-white outline-none"
+                           >
+                             {Object.values(UNIDADES).map(u => <option key={u} value={u}>{u}</option>)}
+                           </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-3">
+                        <div>
+                          <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1 truncate" title={`1 ${item.insumo.unidad_compra} = X ${item.insumo.unidad_base}`}>Conversión</label>
+                          <input 
+                            type="number" min="0.01" step="0.01" 
+                            value={item.insumo.factor_conversion} 
+                            onChange={e => updateCarrito(uniqueId, 'factor_conversion', Number(e.target.value), true)} 
+                            className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded text-slate-800 text-xs focus:border-indigo-500 focus:bg-white outline-none" 
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1 truncate">% Rendi</label>
+                          <input 
+                            type="number" min="1" max="100" step="1" 
+                            value={item.insumo.porcentaje_rendimiento} 
+                            onChange={e => updateCarrito(uniqueId, 'porcentaje_rendimiento', Number(e.target.value), true)} 
+                            className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded text-slate-800 text-xs focus:border-indigo-500 focus:bg-white outline-none" 
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1 truncate">Alerta Mín ({item.insumo.unidad_base})</label>
+                          <input 
+                            type="number" min="0" step="1" 
+                            value={item.insumo.umbral_minimo} 
+                            onChange={e => updateCarrito(uniqueId, 'umbral_minimo', Number(e.target.value), true)} 
+                            className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded text-slate-800 text-xs focus:border-indigo-500 focus:bg-white outline-none" 
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1 truncate">Alerta Cad. (días)</label>
+                          <input 
+                            type="number" min="0" step="1" 
+                            value={item.insumo.dias_alerta_caducidad} 
+                            onChange={e => updateCarrito(uniqueId, 'dias_alerta_caducidad', Number(e.target.value), true)} 
+                            className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded text-slate-800 text-xs focus:border-indigo-500 focus:bg-white outline-none" 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="text-right border-t border-slate-200 pt-2">
                      <p className="text-[10px] text-slate-500">
                         Costo Unitario: <span className="font-bold text-slate-700">${item.cantidad > 0 ? (item.costo_total / item.cantidad).toFixed(2) : '0.00'}</span> / {item.insumo.unidad_compra}
                      </p>
                   </div>
                 </div>
-              ))
+              )})
             )}
           </div>
 

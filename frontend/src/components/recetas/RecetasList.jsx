@@ -214,11 +214,11 @@ export const RecetasList = ({ recetas, onEdit, onDelete, onViewResumen, onPrepar
               <div className="flex space-x-1">
                 <button 
                   onClick={() => onPrepareLote && onPrepareLote(receta)}
-                  className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold py-1 px-2 rounded-md text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-sm"
-                  title="Preparar lote de esta receta"
+                  className="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-bold py-1 px-2 rounded-md text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-sm"
+                  title="Elaborar lote de esta receta"
                 >
                   <ArrowUpRight size={12} />
-                  Preparar
+                  Elaboración
                 </button>
                 <button 
                   onClick={() => onViewResumen && onViewResumen(receta)}

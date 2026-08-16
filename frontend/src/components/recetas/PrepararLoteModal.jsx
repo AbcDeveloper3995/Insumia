@@ -36,8 +36,8 @@ export const PrepararLoteModal = ({ receta, onClose, onSuccess }) => {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <ChefHat size={20} className="text-emerald-500" />
-            Preparar Producción
+            <ChefHat size={20} className="text-blue-500" />
+            Elaborar Producción
           </h2>
           <button 
             onClick={onClose}
@@ -54,7 +54,7 @@ export const PrepararLoteModal = ({ receta, onClose, onSuccess }) => {
               Stock actual: <span className="font-bold text-emerald-600">{Number(receta.stock_actual || 0)}</span>
             </p>
 
-            <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg text-xs mb-4 border border-emerald-100">
+            <div className="bg-blue-50 text-blue-700 p-3 rounded-lg text-xs mb-4 border border-blue-100">
               Al confirmar, los ingredientes crudos se descontarán de tu inventario y el stock de este platillo o subreceta aumentará.
             </div>
 
@@ -69,7 +69,7 @@ export const PrepararLoteModal = ({ receta, onClose, onSuccess }) => {
                 required
                 value={cantidad}
                 onChange={(e) => setCantidad(Number(e.target.value))}
-                className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all font-bold text-lg"
+                className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all font-bold text-lg"
               />
               <span className="text-slate-500 font-medium">unidades</span>
             </div>
@@ -91,10 +91,10 @@ export const PrepararLoteModal = ({ receta, onClose, onSuccess }) => {
             <button
               type="submit"
               disabled={loading || !cantidad || cantidad <= 0}
-              className="flex-1 px-4 py-2 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 cursor-pointer"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 cursor-pointer"
             >
               <ArrowUpRight size={18} />
-              {loading ? 'Procesando...' : 'Confirmar Producción'}
+              {loading ? 'Procesando...' : 'Elaborar'}
             </button>
           </div>
         </form>

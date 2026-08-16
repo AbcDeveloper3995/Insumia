@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Receipt, Info, PlusCircle, CreditCard, ChevronRight, Image as ImageIcon, Wallet, X, DollarSign, Utensils } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Receipt, Info, CreditCard, DollarSign, Utensils, Wallet, LogIn, LogOut, ArrowRightLeft, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { recetasService } from '../services/api/recetas';
 import { ventasService } from '../services/api/ventas';
@@ -27,29 +27,82 @@ export const PuntoVenta = () => {
   const [modalPago, setModalPago] = useState(false);
   const [metodoPago, setMetodoPago] = useState('efectivo');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        if (session?.user?.id) {
-          const restauranteId = currentRestaurant?.id;
-          if (!restauranteId) return;
+  // Control de Turno
+  const [movimientos, setMovimientos] = useState([]);
+  const [showTurnoModal, setShowTurnoModal] = useState(null); // 'abrir', 'cerrar', 'movimiento'
+  const [turnoFormData, setTurnoFormData] = useState({ monto: '', concepto: '', tipo: 'ingreso' });
+  const [turnoErrorMsg, setTurnoErrorMsg] = useState('');
 
-          const caja = await cajaService.getCajaAbierta(restauranteId);
-          setCajaActiva(caja);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      if (session?.user?.id) {
+        const restauranteId = currentRestaurant?.id;
+        if (!restauranteId) return;
 
-          const data = await recetasService.getRecetas(restauranteId);
-          const platillos = data?.filter(r => !r.es_subreceta && Number(r.precio_venta) > 0) || [];
-          setRecetas(platillos);
+        const caja = await cajaService.getCajaAbierta(restauranteId);
+        setCajaActiva(caja);
+        if (caja) {
+           const movs = await cajaService.getMovimientos(caja.id);
+           setMovimientos(movs);
+        } else {
+           setMovimientos([]);
         }
-      } catch (error) {
-        console.error('Error cargando catálogo POS:', error);
-      } finally {
-        setLoading(false);
+
+        const data = await recetasService.getRecetas(restauranteId);
+        const platillos = data?.filter(r => !r.es_subreceta && Number(r.precio_venta) > 0) || [];
+        setRecetas(platillos);
       }
-    };
+    } catch (error) {
+      console.error('Error cargando catálogo POS:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadData();
   }, [session?.user?.id]);
+
+  const totalesTurno = movimientos.reduce((acc, curr) => {
+    const metodo = (curr.metodo_pago || 'efectivo').toLowerCase().trim();
+    const tipo = (curr.tipo || '').toLowerCase().trim();
+
+    if (tipo === 'egreso') {
+        acc.gastos += Number(curr.monto);
+    }
+
+    if (metodo === 'efectivo') {
+        if (tipo === 'ingreso') acc.disponibilidad_efectivo += Number(curr.monto);
+        if (tipo === 'egreso') acc.disponibilidad_efectivo -= Number(curr.monto);
+    }
+    return acc;
+  }, { disponibilidad_efectivo: 0, gastos: 0 });
+
+  const handleTurnoAction = async (e) => {
+    e.preventDefault();
+    setTurnoErrorMsg('');
+    try {
+      const restauranteId = currentRestaurant?.id;
+
+      if (showTurnoModal === 'abrir') {
+        await cajaService.abrirCaja(restauranteId, Number(turnoFormData.monto), turnoFormData.concepto);
+        toast.success('Turno abierto con éxito');
+      } else if (showTurnoModal === 'cerrar') {
+        await cajaService.cerrarCaja(cajaActiva.id, Number(turnoFormData.monto), turnoFormData.concepto);
+        toast.success('Turno cerrado con éxito');
+      } else if (showTurnoModal === 'movimiento') {
+        await cajaService.agregarMovimiento(cajaActiva.id, turnoFormData.tipo, Number(turnoFormData.monto), turnoFormData.concepto, 'efectivo');
+        toast.success('Movimiento registrado con éxito');
+      }
+      setShowTurnoModal(null);
+      setTurnoFormData({ monto: '', concepto: '', tipo: 'ingreso' });
+      loadData();
+    } catch (error) {
+      setTurnoErrorMsg(error.message || 'Error al procesar la solicitud');
+      toast.error('Ocurrió un error');
+    }
+  };
 
   const platillosFiltrados = useMemo(() => {
     if (!searchTerm) return recetas;
@@ -130,6 +183,10 @@ export const PuntoVenta = () => {
       setCarrito([]);
       setModalPago(false);
       setVentaExitosa(true);
+      
+      // Recargar catálogo y movimientos para actualizar stock
+      await loadData();
+
       setTimeout(() => setVentaExitosa(false), 4000);
     } catch (error) {
       console.error('Error procesando venta:', error);
@@ -148,16 +205,61 @@ export const PuntoVenta = () => {
         <div className="w-24 h-24 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-6">
           <Wallet size={48} />
         </div>
-        <h1 className="text-3xl font-bold text-slate-800 mb-4">La Caja está Cerrada</h1>
+        <h1 className="text-3xl font-bold text-slate-800 mb-4">Turno Cerrado</h1>
         <p className="text-slate-500 max-w-lg mb-8 text-lg">
-          Por razones de seguridad y control financiero, no puedes registrar ventas en el Punto de Venta sin antes iniciar un turno de caja.
+          Por razones de control financiero, no puedes registrar ventas en el Punto de Venta sin antes iniciar tu turno y declarar el fondo de la registradora.
         </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl mb-8">
+            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col items-center text-center">
+                <div className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl mb-3"><LogIn size={20} /></div>
+                <h4 className="font-bold text-slate-800 mb-1">1. Fondo Inicial</h4>
+                <p className="text-xs text-slate-500">Comienza tu día declarando con cuánto efectivo físico arranca tu caja registradora para dar cambio.</p>
+            </div>
+            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col items-center text-center">
+                <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl mb-3"><Utensils size={20} /></div>
+                <h4 className="font-bold text-slate-800 mb-1">2. Registra Ventas</h4>
+                <p className="text-xs text-slate-500">Al vender en Efectivo en el POS, Insumia sumará el dinero automáticamente a tu jornada.</p>
+            </div>
+            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col items-center text-center">
+                <div className="p-2.5 bg-[#D32F2F]/10 text-[#D32F2F] rounded-xl mb-3"><LogOut size={20} /></div>
+                <h4 className="font-bold text-slate-800 mb-1">3. Cierre Exacto</h4>
+                <p className="text-xs text-slate-500">Al finalizar el día, haz el arqueo ciego. Te diremos exactamente cuánto dinero físico debe haber.</p>
+            </div>
+        </div>
+
         <button 
-          onClick={() => navigate('/caja')}
-          className="bg-blue-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-lg"
+          onClick={() => setShowTurnoModal('abrir')}
+          className="bg-blue-600 text-white font-bold px-8 py-4 rounded-xl shadow-[0_8px_16px_rgb(37,99,235,0.2)] hover:bg-blue-700 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-2 text-lg cursor-pointer"
         >
-          Ir al módulo de Caja
+          <Wallet size={20} /> Declarar Fondo y Abrir Turno
         </button>
+
+        {showTurnoModal && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl text-left">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6 text-center">Abrir Turno</h2>
+                {turnoErrorMsg && <div className="mb-4 p-3 bg-[#D32F2F]/10 text-[#D32F2F] text-sm font-semibold rounded-xl">{turnoErrorMsg}</div>}
+                
+                <form onSubmit={handleTurnoAction} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Fondo Inicial ($)</label>
+                    <input type="number" step="0.01" min="0" required value={turnoFormData.monto} onChange={e => setTurnoFormData({...turnoFormData, monto: e.target.value})} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Concepto / Turno</label>
+                    <input type="text" required value={turnoFormData.concepto} onChange={e => setTurnoFormData({...turnoFormData, concepto: e.target.value})} placeholder="Ej. Turno Matutino" className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div className="flex items-center gap-3 mt-8">
+                    <button type="button" onClick={() => setShowTurnoModal(null)} className="flex-1 bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors cursor-pointer">Cancelar</button>
+                    <button type="submit" disabled={!turnoFormData.monto || !turnoFormData.concepto.trim()} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-bold shadow-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        Abrir Turno
+                    </button>
+                </div>
+                </form>
+            </motion.div>
+            </div>
+        )}
       </div>
     );
   }
@@ -202,11 +304,29 @@ export const PuntoVenta = () => {
             <h1 className="text-3xl font-black text-slate-800 tracking-tight">Punto de Venta</h1>
             <p className="text-slate-500 font-medium text-sm mt-1">Terminal rápida táctil | Turno activo</p>
           </div>
-          <div className="relative w-full sm:w-96 group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-            </div>
-            <input type="text" placeholder="Buscar platillo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200/60 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium text-slate-700 shadow-sm" />
+          
+          <div className="flex items-center gap-3">
+              <div className="relative w-64 group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input type="text" placeholder="Buscar platillo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-2.5 bg-white border border-slate-200/60 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium text-slate-700 shadow-sm" />
+              </div>
+              
+              <button 
+                onClick={() => { setTurnoFormData({...turnoFormData, tipo: 'egreso'}); setShowTurnoModal('movimiento'); }} 
+                className="flex items-center gap-2 bg-slate-100 text-slate-700 px-3 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors shadow-sm cursor-pointer"
+                title="Registrar Retiro o Ingreso Manual (Ej. Propinas, Hielo)"
+              >
+                <ArrowRightLeft size={18} />
+              </button>
+              
+              <button 
+                onClick={() => setShowTurnoModal('cerrar')} 
+                className="flex items-center gap-2 bg-[#D32F2F] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#C62828] transition-colors shadow-sm cursor-pointer"
+              >
+                <LogOut size={18} /> Cerrar Turno
+              </button>
           </div>
         </div>
 
@@ -342,6 +462,59 @@ export const PuntoVenta = () => {
             <button onClick={procesarVenta} disabled={isProcessing} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-colors flex justify-center items-center cursor-pointer">
               {isProcessing ? 'Procesando...' : 'Confirmar Pago'}
             </button>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modales de Turno (Cerrar / Movimiento Manual) */}
+      {showTurnoModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl">
+            <h2 className="text-2xl font-bold text-slate-800 mb-6 text-center">
+               {showTurnoModal === 'cerrar' ? 'Cerrar Turno' : 'Registrar Movimiento Manual'}
+            </h2>
+            
+            {turnoErrorMsg && <div className="mb-4 p-3 bg-[#D32F2F]/10 text-[#D32F2F] text-sm font-semibold rounded-xl">{turnoErrorMsg}</div>}
+            
+            <form onSubmit={handleTurnoAction} className="space-y-4">
+               {showTurnoModal === 'cerrar' && (
+                   <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl text-center">
+                       <p className="text-sm font-semibold text-blue-600 mb-1">Debes tener en efectivo físico:</p>
+                       <p className="text-3xl font-black text-blue-800">${totalesTurno.disponibilidad_efectivo.toFixed(2)}</p>
+                   </div>
+               )}
+
+               {showTurnoModal === 'movimiento' && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de Movimiento</label>
+                    <div className="flex gap-2">
+                        <button type="button" onClick={() => setTurnoFormData({...turnoFormData, tipo: 'ingreso'})} className={`flex-1 py-2 rounded-xl text-sm font-bold border cursor-pointer ${turnoFormData.tipo === 'ingreso' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-500'}`}>Ingreso a Caja</button>
+                        <button type="button" onClick={() => setTurnoFormData({...turnoFormData, tipo: 'egreso'})} className={`flex-1 py-2 rounded-xl text-sm font-bold border cursor-pointer ${turnoFormData.tipo === 'egreso' ? 'bg-[#D32F2F]/10 border-[#D32F2F]/20 text-[#D32F2F]' : 'bg-white border-slate-200 text-slate-500'}`}>Retiro de Efectivo</button>
+                    </div>
+                  </div>
+               )}
+
+               <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      {showTurnoModal === 'cerrar' ? 'Efectivo Real en Caja ($)' : 'Monto Físico ($)'}
+                  </label>
+                  <input type="number" step="0.01" min="0" required value={turnoFormData.monto} onChange={e => setTurnoFormData({...turnoFormData, monto: e.target.value})} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" />
+               </div>
+
+               <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      {showTurnoModal === 'cerrar' ? 'Notas / Discrepancias' : 'Motivo / Concepto'}
+                  </label>
+                  <input type="text" required value={turnoFormData.concepto} onChange={e => setTurnoFormData({...turnoFormData, concepto: e.target.value})} placeholder={showTurnoModal === 'movimiento' ? 'Ej. Propinas, Hielo...' : ''} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+               </div>
+
+               <div className="flex items-center gap-3 mt-8">
+                  <button type="button" onClick={() => setShowTurnoModal(null)} className="flex-1 bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors cursor-pointer">Cancelar</button>
+                  <button type="submit" disabled={!turnoFormData.monto || !turnoFormData.concepto.trim()} className={`flex-1 text-white px-4 py-3 rounded-xl font-bold shadow-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${showTurnoModal === 'cerrar' ? 'bg-[#D32F2F] hover:bg-[#C62828]' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                      {showTurnoModal === 'cerrar' ? 'Confirmar Cierre' : 'Guardar'}
+                  </button>
+               </div>
+            </form>
           </motion.div>
         </div>
       )}

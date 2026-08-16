@@ -11,7 +11,8 @@ import {
   LogOut,
   Wallet,
   Truck,
-  Store
+  Store,
+  Building
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/auth/authService';
@@ -31,12 +32,12 @@ export const Sidebar = () => {
 
   const navItems = [
     { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    { to: '/caja', icon: <Wallet size={20} />, label: 'Caja' },
-    { to: '/inventario', icon: <Package size={20} />, label: 'Insumos' },
     { to: '/compras', icon: <Truck size={20} />, label: 'Compras' },
+    { to: '/inventario', icon: <Package size={20} />, label: 'Inventario' },
     { to: '/recetas', icon: <ChefHat size={20} />, label: 'Recetas' },
     { to: '/ventas', icon: <ShoppingCart size={20} />, label: 'Punto de Venta' },
     { to: '/informes', icon: <BarChart3 size={20} />, label: 'Informes' },
+    { to: '/finanzas', icon: <Building size={20} />, label: 'Finanzas' },
     { to: '/seleccionar-restaurante', icon: <Store size={20} />, label: 'Mis Restaurantes' },
   ];
 

@@ -122,12 +122,39 @@ export const Compras = () => {
           const estado = pagarDeCaja ? 'pagada' : 'pendiente';
           const cajaId = pagarDeCaja ? cajaActiva.id : null;
           
-          const detalles = carrito.map(item => ({
-              insumo_id: item.insumo.id,
-              cantidad: item.cantidad,
-              precio_unitario: item.cantidad > 0 ? (item.costo_total / item.cantidad) : 0
-          }));
+          const detalles = [];
+          
+          // Primero, procesamos el carrito. Si hay insumos nuevos, los creamos.
+          for (const item of carrito) {
+             let finalInsumoId = item.insumo.id;
 
+             if (item.isNew) {
+                const nuevoInsumoData = {
+                  restaurante_id: restauranteId,
+                  nombre: item.insumo.nombre,
+                  unidad_compra: item.insumo.unidad_compra,
+                  unidad_base: item.insumo.unidad_base,
+                  factor_conversion: item.insumo.factor_conversion,
+                  porcentaje_rendimiento: item.insumo.porcentaje_rendimiento,
+                  umbral_minimo: item.insumo.umbral_minimo,
+                  dias_alerta_caducidad: item.insumo.dias_alerta_caducidad,
+                  costo_unidad_compra: 0
+                };
+                
+                const createdInsumo = await insumosService.createInsumo(nuevoInsumoData);
+                finalInsumoId = createdInsumo.id;
+             }
+
+             detalles.push({
+                insumo_id: finalInsumoId,
+                cantidad: item.cantidad,
+                precio_unitario: item.cantidad > 0 ? (item.costo_total / item.cantidad) : 0,
+                fecha_caducidad: item.fecha_caducidad // Guardamos la caducidad (se procesará en registrarCompra)
+             });
+          }
+
+          // Nota: comprasService.registrarCompra deberá manejar 'fecha_caducidad' si está implementado, 
+          // actualmente lo pasamos en el detalle.
           await comprasService.registrarCompra(restauranteId, proveedor_id, estado, detalles, cajaId);
           
           toast.success('¡Compra registrada con éxito!');

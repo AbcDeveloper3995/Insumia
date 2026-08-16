@@ -149,7 +149,40 @@ Añade 3 insumos con la siguiente configuración exacta:
   - **Utilidad Bruta Real:** **$429.00** *($454.00 - $25.00)*.
 - **Tabla "Matriz de Rentabilidad":**
   - Aparecerán los dos platillos (Desayuno y Huevos Estrellados) con sus respectivos márgenes en verde (83.8% y 81.5%).
-- **Top Insumo (Ganancia):**
   - El "Huevo Blanco" debe aparecer firmemente posicionado como el rey, ya que está presente en todos los platillos vendidos, demostrando la potencia del cálculo de "Ingreso Proporcional".
 
+---
+
+## FASE 9: Producción Anticipada y Control de Finanzas
+**Objetivo:** Probar el módulo de Finanzas y la función de "Elaborar Producción" de recetas, validando que el POS descuente el stock real preparado.
+
+### 9.1 Elaboración de Platillos
+- Ve a **Recetas**.
+- Selecciona el platillo "Orden de Huevos Estrellados" y haz clic en **Elaboración**.
+- En el modal "Elaborar Producción", indica que vas a preparar **5 unidades**.
+- Haz clic en **Elaborar**.
+- **Resultados Esperados:**
+  - El sistema descontará 10 Huevos (2 por unidad) del inventario de insumos crudos.
+  - La tarjeta de la receta ahora mostrará un badge verde indicando **"5 Preparados"**.
+
+### 9.2 Venta con Descuento de Stock Real
+- Ve al **Punto de Venta**.
+- Si no tienes un turno abierto, el sistema te mostrará la pantalla de "Turno Cerrado". 
+- Haz clic en **Declarar Fondo y Abrir Turno** (ej. $200 de fondo).
+- Verás el catálogo. La tarjeta de "Orden de Huevos Estrellados" mostrará **5 Preparados**.
+- Agrega **3 unidades** de "Orden de Huevos Estrellados" al carrito.
+- Haz clic en **Proceder al Pago** y cóbralo en efectivo.
+- **Resultado Esperado:** 
+  - Al procesarse la venta, la pantalla se refresca sola y la tarjeta de la receta debe bajar automáticamente a **2 Preparados**.
+
+### 9.3 Auditoría Gerencial (Finanzas)
+- Ve a **Finanzas** desde el menú lateral.
+- **Resultados Esperados:**
+  - Debes ver una sección "Turno en Progreso (Métricas en Vivo)".
+  - El **Fondo Inicial** debe ser $200.00.
+  - **Ventas Efectivo** debe reflejar el total de la venta de los 3 platillos (3 * $40 = $120.00).
+  - El **Balance Neto del Día** sumará las ventas, y el efectivo físico esperado será de $320.00.
+  - La tabla inferior mostrará la venta registrada hace un momento.
+
 **Fin del Caso de Prueba.**
+

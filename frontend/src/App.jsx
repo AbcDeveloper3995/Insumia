@@ -8,7 +8,7 @@ import { Inventario } from './pages/Inventario';
 import { Recetas } from './pages/Recetas';
 import { PuntoVenta } from './pages/PuntoVenta';
 import { Informes } from './pages/Informes';
-import { Caja } from './pages/Caja';
+import { Finanzas } from './pages/Finanzas';
 import { Compras } from './pages/Compras';
 import { SeleccionRestaurante } from './pages/SeleccionRestaurante';
 
@@ -29,7 +29,7 @@ function App() {
           <Route path="/recetas" element={<Recetas />} />
           <Route path="/ventas" element={<PuntoVenta />} />
           <Route path="/informes" element={<Informes />} />
-          <Route path="/caja" element={<Caja />} />
+          <Route path="/finanzas" element={<Finanzas />} />
           <Route path="/compras" element={<Compras />} />
         </Route>
 
