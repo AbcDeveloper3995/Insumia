@@ -10,6 +10,7 @@ import { RecetaResumenModal } from '../components/recetas/RecetaResumenModal';
 import { PrepararLoteModal } from '../components/recetas/PrepararLoteModal';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
+import { useTour } from '../context/TourContext';
 
 export const Recetas = () => {
   const { session, currentRestaurant } = useAuth();
@@ -45,6 +46,24 @@ export const Recetas = () => {
 
   useEffect(() => {
     loadRecetas();
+  }, []);
+
+  const { registerPageTour } = useTour();
+
+  useEffect(() => {
+    registerPageTour('recetas', [
+      {
+        target: '.tour-recetas-add',
+        content: 'Usa este botón para diseñar tus recetas, platillos finales o subrecetas (como masas base o salsas).',
+        disableBeacon: true,
+      },
+      {
+        target: '.tour-recetas-lista',
+        content: 'Aquí verás tus tarjetas de recetas. Haz clic en el botón de la receta (Resumen) para analizar detalladamente su costo y margen de ganancia. Usa el botón "Elaboración" para preparar unidades físicas de la receta y pasarlas a tu stock listo para vender.',
+        placement: 'center',
+      }
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleOpenModal = async (receta = null) => {
@@ -158,7 +177,7 @@ export const Recetas = () => {
 
             <button
               onClick={() => handleOpenModal()}
-              className="flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+              className="tour-recetas-add flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
             >
               <Plus size={18} />
               <span>Nueva Receta</span>
@@ -167,7 +186,7 @@ export const Recetas = () => {
         </div>
 
         {/* Área de Contenido */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="tour-recetas-lista flex-1 overflow-y-auto p-8">
 
         {loading ? (
           <LoadingSpinner text="Cargando recetario..." />

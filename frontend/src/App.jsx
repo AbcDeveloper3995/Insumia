@@ -11,10 +11,11 @@ import { Informes } from './pages/Informes';
 import { Finanzas } from './pages/Finanzas';
 import { Compras } from './pages/Compras';
 import { SeleccionRestaurante } from './pages/SeleccionRestaurante';
+import { TourProvider } from './context/TourContext';
 
 function App() {
   return (
-    <>
+    <TourProvider>
       <Toaster position="top-center" toastOptions={{ duration: 3000, style: { borderRadius: '12px', fontWeight: '500' } }} />
       <Router>
         <Routes>
@@ -37,7 +38,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
-    </>
+    </TourProvider>
   );
 }
 

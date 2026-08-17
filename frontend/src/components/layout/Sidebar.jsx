@@ -12,15 +12,18 @@ import {
   Wallet,
   Truck,
   Store,
-  Building
+  Building,
+  HelpCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTour } from '../../context/TourContext';
 import { authService } from '../../services/auth/authService';
 import { NotificationBell } from './NotificationBell';
 
 export const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(true);
   const { session } = useAuth();
+  const { startActivePageTour, hasActiveTour } = useTour();
 
   const handleLogout = async () => {
     try {
@@ -85,25 +88,54 @@ export const Sidebar = () => {
       {/* Footer / User Profile */}
       <div className="border-t border-slate-100/50 p-4 bg-slate-50/30">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3 overflow-hidden px-1">
+          <div className="flex items-center space-x-3 overflow-hidden px-1 flex-1 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-700 font-bold flex-shrink-0 shadow-inner">
               {session?.user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
-            <div className={`transition-all duration-300 ${!isExpanded ? 'opacity-0 w-0 hidden' : 'opacity-100'}`}>
+            <div className={`transition-all duration-300 flex-1 min-w-0 ${!isExpanded ? 'opacity-0 w-0 hidden' : 'opacity-100'}`}>
               <p className="text-sm font-bold text-slate-800 truncate tracking-tight">Administrador</p>
               <p className="text-xs text-slate-400 truncate font-medium" title={session?.user?.email}>
                 {session?.user?.email}
               </p>
             </div>
           </div>
-          <div className={`transition-all duration-300 ${!isExpanded ? 'hidden' : 'block'}`}>
+          <div className={`transition-all duration-300 flex items-center gap-2 shrink-0 ${!isExpanded ? 'hidden' : 'block'}`}>
+            {hasActiveTour && (
+              <button 
+                onClick={startActivePageTour} 
+                className="group flex items-center justify-center p-2 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all duration-300 shadow-sm relative overflow-hidden" 
+                title="Iniciar Tour Guiado"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <HelpCircle size={20} className="relative z-10" />
+                {/* Ping animation to draw attention gently */}
+                <span className="absolute top-1 right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+              </button>
+            )}
             <NotificationBell isSidebarExpanded={isExpanded} />
           </div>
         </div>
         
-        {/* En vista contraída, mostrar la campana sola arriba del botón salir */}
+        {/* En vista contraída, mostrar iconos sueltos arriba del botón salir */}
         {!isExpanded && (
-           <div className="mb-4 flex justify-center">
+           <div className="mb-4 flex flex-col items-center gap-3">
+             {hasActiveTour && (
+               <button 
+                 onClick={startActivePageTour} 
+                 className="group flex items-center justify-center p-2 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all duration-300 shadow-sm relative overflow-hidden w-full" 
+                 title="Iniciar Tour Guiado"
+               >
+                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                 <HelpCircle size={20} className="relative z-10" />
+                 <span className="absolute top-1 right-1 flex h-2 w-2">
+                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                 </span>
+               </button>
+             )}
              <NotificationBell isSidebarExpanded={isExpanded} />
            </div>
         )}

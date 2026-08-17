@@ -17,6 +17,7 @@ import { recetasService } from '../services/api/recetas';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
 import { supabase } from '../services/api/client';
+import { useTour } from '../context/TourContext';
 
 export const Inventario = () => {
   const { session, currentRestaurant } = useAuth();
@@ -74,6 +75,28 @@ export const Inventario = () => {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  const { registerPageTour } = useTour();
+
+  useEffect(() => {
+    registerPageTour('inventario', [
+      {
+        target: '.tour-inventario-tabs',
+        content: 'Aquí puedes cambiar entre el Kardex general y el registro de Mermas para el control de desperdicios.',
+        disableBeacon: true,
+      },
+      {
+        target: '.tour-inventario-add',
+        content: 'Usa este botón para crear nuevos insumos. Recuerda definir bien tu Unidad Base (ej. gramos) y Unidad de Compra (ej. Kilos).',
+      },
+      {
+        target: '.tour-inventario-lista',
+        content: 'Aquí verás las tarjetas de todos tus insumos en tiempo real. Haz clic en el botón de "Detalles" (Kardex) de cada tarjeta para ver su historial completo de entradas, salidas y ajustes.',
+        placement: 'center',
+      }
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleOpenModal = (insumo = null) => {
@@ -275,7 +298,7 @@ export const Inventario = () => {
             {activeTab === 'stock' && (
               <button
                 onClick={() => handleOpenModal()}
-                className="flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+                className="tour-inventario-add flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
               >
                 <Plus size={18} />
                 <span>Nuevo Insumo</span>
@@ -285,7 +308,7 @@ export const Inventario = () => {
         </div>
 
         {/* Pestañas */}
-        <div className="px-8 bg-white border-b border-slate-100 flex gap-6 shrink-0">
+        <div className="tour-inventario-tabs px-8 bg-white border-b border-slate-100 flex gap-6 shrink-0">
           <button
             onClick={() => setActiveTab('stock')}
             className={`py-4 font-bold text-sm border-b-2 transition-colors ${
@@ -308,7 +331,7 @@ export const Inventario = () => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="tour-inventario-lista flex-1 overflow-y-auto p-8">
             {errorCarga && (
               <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg font-medium">
                 <strong>Error de carga:</strong> {errorCarga}

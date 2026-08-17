@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/api/client';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
+import { useTour } from '../context/TourContext';
 
 export const PuntoVenta = () => {
   const { session, currentRestaurant } = useAuth();
@@ -63,6 +64,27 @@ export const PuntoVenta = () => {
   useEffect(() => {
     loadData();
   }, [session?.user?.id]);
+
+  const { registerPageTour } = useTour();
+
+  useEffect(() => {
+    registerPageTour('punto_venta', [
+      {
+        target: '.tour-pos-acciones',
+        content: 'Desde aquí puedes registrar movimientos manuales de dinero (como propinas) o realizar tu Cierre de Turno (Arqueo Ciego).',
+        disableBeacon: true,
+      },
+      {
+        target: '.tour-pos-catalogo',
+        content: 'Toca los platillos para agregarlos a la venta. Si un platillo no tiene stock preparado, no podrás venderlo.',
+      },
+      {
+        target: '.tour-pos-ticket',
+        content: 'Aquí verás el resumen de la compra. Al Proceder al Pago, el dinero se sumará a la caja y el stock se descontará automáticamente.',
+      }
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const totalesTurno = movimientos.reduce((acc, curr) => {
     const metodo = (curr.metodo_pago || 'efectivo').toLowerCase().trim();
@@ -305,7 +327,7 @@ export const PuntoVenta = () => {
             <p className="text-slate-500 font-medium text-sm mt-1">Terminal rápida táctil | Turno activo</p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="tour-pos-acciones flex items-center gap-3">
               <div className="relative w-64 group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
@@ -330,7 +352,7 @@ export const PuntoVenta = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 lg:p-10">
+        <div className="tour-pos-catalogo flex-1 overflow-y-auto p-8 lg:p-10">
           {loading ? (
             <LoadingSpinner text="Cargando catálogo..." />
           ) : (
@@ -379,7 +401,7 @@ export const PuntoVenta = () => {
       </div>
 
       {/* Panel Derecho: Carrito Claro Premium */}
-      <div className="w-full md:w-[420px] bg-white/90 backdrop-blur-2xl flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.04)] z-20 shrink-0 h-full border-l border-slate-200/50">
+      <div className="tour-pos-ticket w-full md:w-[420px] bg-white/90 backdrop-blur-2xl flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.04)] z-20 shrink-0 h-full border-l border-slate-200/50">
         <div className="px-8 py-8 shrink-0 border-b border-slate-100 bg-transparent">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center"><ShoppingCart className="mr-3 text-blue-600" size={24} strokeWidth={2.5} />Ticket</h2>

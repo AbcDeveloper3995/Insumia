@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTour } from '../context/TourContext';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, 
@@ -31,6 +32,7 @@ import {
 
 export const Informes = () => {
   const { currentRestaurant } = useAuth();
+  const { clearActiveTour } = useTour();
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState([]);
   const [trendData, setTrendData] = useState([]);
@@ -50,6 +52,8 @@ export const Informes = () => {
   });
 
   useEffect(() => {
+    if (clearActiveTour) clearActiveTour();
+    
     const loadReportData = async () => {
       try {
         setLoading(true);

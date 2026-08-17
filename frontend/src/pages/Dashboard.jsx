@@ -5,6 +5,7 @@ import { insumosService } from '../services/api/insumos';
 import { recetasService } from '../services/api/recetas';
 import { ventasService } from '../services/api/ventas';
 import { useAuth } from '../context/AuthContext';
+import { useTour } from '../context/TourContext';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend
@@ -15,6 +16,7 @@ import { LoadingSpinner } from '../components/ui/Loading';
 
 export const Dashboard = () => {
   const { currentRestaurant } = useAuth();
+  const { clearActiveTour } = useTour();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     insumosCount: 0,
@@ -29,6 +31,8 @@ export const Dashboard = () => {
   const [topIngredientes, setTopIngredientes] = useState([]);
 
   useEffect(() => {
+    if (clearActiveTour) clearActiveTour();
+    
     const loadDashboardData = async () => {
       try {
         setLoading(true);
@@ -435,7 +439,9 @@ export const Dashboard = () => {
                 </ResponsiveContainer>
                 {/* Custom Legend (Center Text) */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none mt-[-10px]">
-                   <span className="text-xl font-black text-slate-800">${topIngredientes[0]?.ganancia.toFixed(0)}</span>
+                   <span className="text-xl font-black text-slate-800">
+                     ${topIngredientes[0]?.ganancia ? topIngredientes[0].ganancia.toFixed(0) : '0'}
+                   </span>
                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">Líder</span>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Building, AlertTriangle, ShoppingCart, ArrowRightLeft, Clock, DollarSign, TrendingDown, TrendingUp, CalendarDays, CheckCircle2, Wallet, CreditCard, Banknote, Info } from 'lucide-react';
 import { supabase } from '../services/api/client';
 import { LoadingSpinner } from '../components/ui/Loading';
+import { useTour } from '../context/TourContext';
 
 export const Finanzas = () => {
   const { session, currentRestaurant } = useAuth();
@@ -74,6 +75,27 @@ export const Finanzas = () => {
     if (session?.user?.id) loadData();
   }, [session?.user?.id]);
 
+  const { registerPageTour } = useTour();
+
+  useEffect(() => {
+    registerPageTour('finanzas', [
+      {
+        target: '.tour-finanzas-kpis',
+        content: 'Aquí verás un resumen de tu inversión en compras, las deudas pendientes a proveedores y el acumulado de dinero perdido por descuadres en la caja.',
+        disableBeacon: true,
+      },
+      {
+        target: '.tour-finanzas-vivo',
+        content: 'Monitorea en tiempo real el turno del Punto de Venta actual para saber exactamente cuánto dinero debería haber físicamente en caja.',
+      },
+      {
+        target: '.tour-finanzas-auditoria',
+        content: 'Historial de auditoría. Revisa todos los cierres pasados y detecta al instante si hubo faltantes (descuadres) de efectivo.',
+      }
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Cálculos para la caja activa (si existe)
   const totalesActivos = movimientosActivos.reduce((acc, curr) => {
       const metodo = (curr.metodo_pago || 'efectivo').toLowerCase().trim();
@@ -116,7 +138,7 @@ export const Finanzas = () => {
         </div>
 
         {/* Global KPIs for Finanzas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="tour-finanzas-kpis grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex items-center justify-between group">
               <div>
                  <div className="flex items-center gap-1.5 mb-1">
@@ -167,7 +189,7 @@ export const Finanzas = () => {
 
         {/* MÉTRICAS EN VIVO DEL TURNO ACTUAL */}
         {cajaActiva ? (
-            <div className="mb-10">
+            <div className="tour-finanzas-vivo mb-10">
                 <div className="flex items-center gap-2 mb-4">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                     <h2 className="text-lg font-bold text-slate-800">Turno en Progreso (Métricas en Vivo)</h2>
@@ -276,7 +298,7 @@ export const Finanzas = () => {
                 </div>
             </div>
         ) : (
-            <div className="mb-10 bg-slate-100 rounded-3xl p-6 text-center border-2 border-dashed border-slate-200">
+            <div className="tour-finanzas-vivo mb-10 bg-slate-100 rounded-3xl p-6 text-center border-2 border-dashed border-slate-200">
                 <p className="text-slate-500 font-semibold flex items-center justify-center gap-2">
                    <Clock size={18} /> No hay ningún turno operativo abierto en este momento.
                 </p>
@@ -284,7 +306,7 @@ export const Finanzas = () => {
         )}
 
         {/* HISTÓRICO DE TURNOS */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="tour-finanzas-auditoria bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-bold text-slate-800">Historial de Turnos (Auditoría)</h2>
