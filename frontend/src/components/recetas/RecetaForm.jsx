@@ -40,7 +40,10 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
   useEffect(() => {
     if (watchTipo === 'subreceta') {
       setValue('precio_venta', 0);
+    } else {
+      setValue('rendimiento', 1);
     }
+    setTimeout(recalcularCostoTotal, 0);
   }, [watchTipo, setValue]);
 
   useEffect(() => {
@@ -133,55 +136,76 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        <label className={`flex-1 cursor-pointer border-2 rounded-2xl p-4 transition-all shadow-sm ${watchTipo === 'platillo' ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'}`}>
+           <input type="radio" value="platillo" {...register('tipo')} className="hidden" />
+           <div className="flex items-center gap-4">
+             <div className={`w-12 h-12 flex items-center justify-center rounded-xl text-xl shrink-0 ${watchTipo === 'platillo' ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-slate-100 text-slate-400'}`}>
+               🍔
+             </div>
+             <div>
+               <h4 className={`font-black text-lg leading-tight ${watchTipo === 'platillo' ? 'text-blue-900' : 'text-slate-700'}`}>Platillo Final</h4>
+               <p className={`text-xs mt-0.5 leading-snug font-medium ${watchTipo === 'platillo' ? 'text-blue-700/80' : 'text-slate-500'}`}>
+                 Se vende directo al cliente (Ej. Hamburguesa, Taco, Refresco).
+               </p>
+             </div>
+           </div>
+        </label>
+
+        <label className={`flex-1 cursor-pointer border-2 rounded-2xl p-4 transition-all shadow-sm ${watchTipo === 'subreceta' ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200' : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50'}`}>
+           <input type="radio" value="subreceta" {...register('tipo')} className="hidden" />
+           <div className="flex items-center gap-4">
+             <div className={`w-12 h-12 flex items-center justify-center rounded-xl text-xl shrink-0 ${watchTipo === 'subreceta' ? 'bg-purple-600 text-white shadow-md shadow-purple-200' : 'bg-slate-100 text-slate-400'}`}>
+               🥣
+             </div>
+             <div>
+               <h4 className={`font-black text-lg leading-tight ${watchTipo === 'subreceta' ? 'text-purple-900' : 'text-slate-700'}`}>Sub-receta / Lote</h4>
+               <p className={`text-xs mt-0.5 leading-snug font-medium ${watchTipo === 'subreceta' ? 'text-purple-700/80' : 'text-slate-500'}`}>
+                 Se prepara en volumen para usar como ingrediente (Ej. 10L de Salsa, Masa).
+               </p>
+             </div>
+           </div>
+        </label>
+      </div>
+
+      <div className={`grid grid-cols-1 ${watchTipo === 'subreceta' ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 mb-8`}>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+          <label className="block text-sm font-bold text-slate-800 mb-1.5">
+            Nombre {watchTipo === 'platillo' ? 'del Platillo' : 'de la Sub-receta'}
+          </label>
           <input
             {...register('nombre', { required: 'Requerido' })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Ej. Hamburguesa Clásica"
+            className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-800 font-medium shadow-sm"
+            placeholder={watchTipo === 'platillo' ? 'Ej. Hamburguesa Clásica' : 'Ej. Masa para Pizzas'}
           />
-          {errors.nombre && <span className="text-red-500 text-xs">{errors.nombre.message}</span>}
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
-          <Controller
-            name="tipo"
-            control={control}
-            render={({ field }) => (
-              <CustomSelect
-                {...field}
-                options={[
-                  { value: 'platillo', label: 'Platillo Final (Venta)' },
-                  { value: 'subreceta', label: 'Sub-receta (Preparación Base)' }
-                ]}
-              />
-            )}
-          />
+          {errors.nombre && <span className="text-red-500 text-xs font-bold mt-1 block">{errors.nombre.message}</span>}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Rendimiento (Lote)</label>
-          <div className="relative">
-            <input
-              type="number"
-              step="1"
-              min="1"
-              {...register('rendimiento', { 
-                required: 'Requerido', 
-                min: { value: 1, message: 'Min 1' },
-                onBlur: recalcularCostoTotal
-              })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none pr-14"
-              placeholder="1"
-            />
-            <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-bold uppercase">
-              Unid.
-            </span>
+        {watchTipo === 'subreceta' && (
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-1.5">
+              ¿Cuántas porciones produce esta receta en total? (Rendimiento)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                step="1"
+                min="1"
+                {...register('rendimiento', { 
+                  required: 'Requerido', 
+                  min: { value: 1, message: 'Min 1' },
+                  onBlur: recalcularCostoTotal
+                })}
+                className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-slate-800 font-bold text-lg shadow-sm pr-20"
+                placeholder="10"
+              />
+              <span className="absolute right-4 top-3.5 text-xs text-slate-400 font-black uppercase tracking-wider">
+                Unid/Porc.
+              </span>
+            </div>
+            {errors.rendimiento && <span className="text-red-500 text-xs font-bold mt-1 block">{errors.rendimiento.message}</span>}
           </div>
-          {errors.rendimiento && <span className="text-red-500 text-xs">{errors.rendimiento.message}</span>}
-        </div>
+        )}
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
@@ -360,9 +384,11 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
             <p className="text-xl font-bold text-rose-400">${costoUnitarioCalculado.toFixed(2)}</p>
           </div>
 
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <p className="text-slate-400 text-xs">Precio de Venta</p>
+          {watchTipo === 'platillo' && (
+            <>
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <p className="text-slate-400 text-xs">Precio de Venta</p>
               <div className="relative flex items-center group/tooltip">
                 <Info size={12} className="text-slate-500 hover:text-slate-300 cursor-help transition-colors" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-64 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[100] text-center pointer-events-none shadow-lg normal-case font-normal leading-tight">
@@ -403,10 +429,12 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                 </div>
               </div>
             </div>
-            <p className={`text-xl font-bold ${margen >= 65 ? 'text-emerald-400' : margen >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-              {margen.toFixed(1)}%
-            </p>
-          </div>
+              <p className={`text-xl font-bold ${margen >= 65 ? 'text-emerald-400' : margen >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                {margen.toFixed(1)}%
+              </p>
+            </div>
+            </>
+          )}
         </div>
       </div>
 

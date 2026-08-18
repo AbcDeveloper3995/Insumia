@@ -56,11 +56,6 @@ export const Recetas = () => {
         target: '.tour-recetas-add',
         content: 'Usa este botón para diseñar tus recetas, platillos finales o subrecetas (como masas base o salsas).',
         disableBeacon: true,
-      },
-      {
-        target: '.tour-recetas-lista',
-        content: 'Aquí verás tus tarjetas de recetas. Haz clic en el botón de la receta (Resumen) para analizar detalladamente su costo y margen de ganancia. Usa el botón "Elaboración" para preparar unidades físicas de la receta y pasarlas a tu stock listo para vender.',
-        placement: 'center',
       }
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps

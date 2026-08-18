@@ -15,15 +15,18 @@ export const TourProvider = ({ children }) => {
     setTourSteps(steps);
     setTourId(prev => prev + 1);
     setRunTour(true);
+    localStorage.setItem(`tour_seen_${tourKey}`, 'true');
   };
 
   // Cada página registra su tour al montarse
   const registerPageTour = (tourKey, steps) => {
     setActivePageTour({ tourKey, steps });
+    
     const hasSeen = localStorage.getItem(`tour_seen_${tourKey}`);
     if (!hasSeen) {
-      // Pequeño timeout para asegurar que el DOM cargó
       setTimeout(() => startTour(tourKey, steps), 500);
+    } else {
+      setRunTour(false);
     }
   };
 
@@ -36,17 +39,15 @@ export const TourProvider = ({ children }) => {
 
   const clearActiveTour = () => {
     setActivePageTour(null);
+    setRunTour(false);
   };
 
   const handleTourCallback = (data) => {
-    const { status, action } = data;
+    const { status, action, type } = data;
     const finishedStatuses = ['finished', 'skipped'];
     
-    if (finishedStatuses.includes(status) || action === 'close') {
+    if (finishedStatuses.includes(status) || action === 'close' || type === 'error' || type === 'tour:end') {
       setRunTour(false);
-      if (currentTourKey) {
-        localStorage.setItem(`tour_seen_${currentTourKey}`, 'true');
-      }
     }
   };
 

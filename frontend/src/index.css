@@ -15,3 +15,18 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+@keyframes borderPulseAlert {
+  0%, 100% { 
+    border-color: rgba(239, 68, 68, 1); 
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3); 
+  }
+  50% { 
+    border-color: rgba(239, 68, 68, 0.3); 
+    box-shadow: 0 0 0px rgba(239, 68, 68, 0); 
+  }
+}
+
+.animate-alert-border {
+  animation: borderPulseAlert 2s ease-in-out infinite;
+}

@@ -1,6 +1,6 @@
-import { AlertTriangle, Edit, Trash2, Package, Info, Lightbulb, ChefHat, TrendingDown, ShoppingCart, Archive, RefreshCw } from 'lucide-react';
+import { Edit2, Trash2, ArrowRightLeft, PackageOpen, Plus, Activity, RefreshCw, Package, Info, Lightbulb, ChefHat, TrendingDown, ShoppingCart, Archive, AlertTriangle } from 'lucide-react';
 
-export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onInitialPurchase, onViewKardex }) => {
+export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onViewKardex }) => {
   if (!insumos || insumos.length === 0) {
     return (
       <div className="space-y-6">
@@ -111,7 +111,7 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onInitialPur
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {insumos.map((insumo) => {
         const stockActual = Number(insumo.cantidad_actual_base || 0);
         const costo = Number(insumo.costo_unidad_compra || 0);
@@ -126,7 +126,7 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onInitialPur
             key={insumo.id} 
             className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col relative
               ${isInactive ? 'opacity-70 grayscale-[0.3]' : ''}
-              ${needsPurchase ? 'border-2 border-rose-200' : (isBajoUmbral ? 'border-2 border-amber-200' : 'border border-slate-200')}
+              ${needsPurchase ? 'border-2 border-rose-200' : (isBajoUmbral ? 'border-2 border-red-500 animate-alert-border' : 'border border-slate-200')}
             `}
           >
             {isInactive && (
@@ -144,59 +144,59 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onInitialPur
               </div>
             )}
             {isBajoUmbral && !isInactive && (
-              <div className="bg-amber-50 border-b border-amber-100 px-3 py-1.5 flex items-center gap-1.5">
-                <AlertTriangle size={14} className="text-amber-600" />
-                <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">Stock Bajo</span>
+              <div className="bg-red-50 border-b border-red-200 px-3 py-1.5 flex items-center gap-1.5">
+                <AlertTriangle size={14} className="text-red-600 animate-pulse" />
+                <span className="text-[11px] font-bold text-red-600 uppercase tracking-wide">Stock Bajo</span>
               </div>
             )}
             
             {/* Cabecera Tarjeta */}
-            <div className={`p-4 border-b ${needsPurchase ? 'border-rose-100' : (isBajoUmbral ? 'border-amber-100' : 'border-slate-100')} flex justify-between items-start`}>
-              <div className="flex items-center space-x-3">
+            <div className={`p-3 border-b ${needsPurchase ? 'border-rose-100' : (isBajoUmbral ? 'border-red-100' : 'border-slate-100')} flex justify-between items-start`}>
+              <div className="flex items-center space-x-2">
                 <div className={`p-1.5 rounded-lg 
-                  ${needsPurchase ? 'bg-rose-100 text-rose-600' : (isBajoUmbral ? 'bg-amber-100 text-amber-600' : 'bg-blue-50 text-blue-600')}`}
+                  ${needsPurchase ? 'bg-rose-100 text-rose-600' : (isBajoUmbral ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-blue-600')}`}
                 >
-                  <Package size={20} />
+                  <Package size={16} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-800 line-clamp-1" title={insumo.nombre}>
+                  <h3 className="font-bold text-sm text-slate-800 line-clamp-1 leading-tight" title={insumo.nombre}>
                     {insumo.nombre}
                   </h3>
-                  <div className="flex items-center text-xs text-slate-500 mt-1">
-                    <span className="bg-slate-100 px-1.5 py-0.5 rounded">{insumo.unidad_compra}</span>
-                    <span className="mx-1">→</span>
-                    <span className="bg-slate-100 px-1.5 py-0.5 rounded">{insumo.unidad_base}</span>
+                  <div className="flex items-center text-[10px] text-slate-500 mt-1">
+                    <span className="bg-slate-100 px-1 py-0.5 rounded font-bold">{insumo.unidad_compra}</span>
+                    <span className="mx-1 font-bold">→</span>
+                    <span className="bg-slate-100 px-1 py-0.5 rounded font-bold">{insumo.unidad_base}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Contenido / Stock Principal */}
-            <div className="p-4 flex-1 relative">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Stock Actual</p>
+            <div className="p-3 flex-1 relative flex flex-col justify-center">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Stock Actual</p>
               <div className="flex items-baseline">
-                <span className={`text-2xl font-black 
-                  ${needsPurchase ? 'text-slate-300' : (isBajoUmbral ? 'text-amber-600' : 'text-emerald-600')}
+                <span className={`text-xl font-black leading-none
+                  ${needsPurchase ? 'text-slate-300' : (isBajoUmbral ? 'text-red-600' : 'text-emerald-600')}
                 `}>
                   {Number(stockActual).toLocaleString('en-US', { maximumFractionDigits: 2 })}
                 </span>
-                <span className="ml-1.5 text-slate-500 font-semibold text-sm">{insumo.unidad_base}</span>
+                <span className="ml-1 text-slate-500 font-bold text-xs">{insumo.unidad_base}</span>
               </div>
               
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
                   <div className="flex items-center gap-1 mb-0.5">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">C. Compra</p>
+                    <p className="text-[9px] uppercase font-bold text-slate-400">C. Compra</p>
                   </div>
-                  <span className={`inline-block px-2 py-0.5 rounded text-sm font-bold ${needsPurchase ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-700'}`}>
+                  <span className={`inline-block text-xs font-bold ${needsPurchase ? 'text-rose-600' : 'text-slate-700'}`}>
                     ${Number(insumo.costo_unidad_compra || 0).toFixed(2)}
                   </span>
                 </div>
-                <div>
+                <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
                   <div className="flex items-center gap-1 mb-0.5">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Rendim.</p>
+                    <p className="text-[9px] uppercase font-bold text-blue-400">Rendim.</p>
                   </div>
-                  <span className="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-sm font-bold">
+                  <span className="inline-block text-blue-700 text-xs font-bold">
                     {insumo.porcentaje_rendimiento}%
                   </span>
                 </div>
@@ -211,64 +211,45 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onInitialPur
             </div>
 
             {/* Botones de Acción */}
-            <div className={`px-4 py-2 border-t flex items-center justify-between
-              ${needsPurchase ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}
+            <div className={`px-2 py-2 border-t flex items-center justify-between shrink-0
+              ${needsPurchase ? 'bg-rose-50 border-rose-100' : 'bg-slate-50/50 border-slate-100'}
             `}>
-              {needsPurchase ? (
-                <>
-                  <button 
-                    onClick={() => onDelete(insumo)}
-                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
-                    title="Eliminar Insumo"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <button 
-                    onClick={() => onInitialPurchase && onInitialPurchase(insumo)}
-                    className="flex-1 ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                  >
-                    <ShoppingCart size={14} />
-                    Registrar Compra
-                  </button>
-                </>
-              ) : (
                 <div className="w-full flex justify-end space-x-1">
                   <button 
                     onClick={() => onViewKardex && onViewKardex(insumo)}
-                    className="flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer mr-2 shadow-sm"
+                    className="flex-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold py-1 px-2 rounded-md text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer mr-1 shadow-sm"
                     title="Ver Detalles / Historial"
                   >
-                    <Info size={14} className="text-slate-400" />
-                    Detalles
+                    <Info size={12} className="text-slate-400" />
+                    Kardex
                   </button>
                   {isInactive ? (
                     <button 
                       onClick={() => onRestore && onRestore(insumo)}
-                      className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                      className="p-1 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
                       title="Restaurar Insumo"
                     >
-                      <RefreshCw size={16} />
+                      <RefreshCw size={14} />
                     </button>
                   ) : (
                     <>
                       <button 
                         onClick={() => onEdit(insumo)}
-                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
                         title="Editar Insumo"
                       >
-                        <Edit size={16} />
+                        <Edit2 size={14} />
                       </button>
                       <button 
                         onClick={() => onDelete(insumo)}
-                        className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
                         title="Eliminar Insumo"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </button>
                     </>
                   )}
                 </div>
-              )}
             </div>
           </div>
         );

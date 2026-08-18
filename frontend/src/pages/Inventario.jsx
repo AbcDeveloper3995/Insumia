@@ -8,7 +8,6 @@ import { cajaService } from '../services/api/caja';
 import { Modal } from '../components/common/Modal';
 import { InsumoForm } from '../components/inventario/InsumoForm';
 import { InsumosList } from '../components/inventario/InsumosList';
-import { InsumoCompraInicial } from '../components/inventario/InsumoCompraInicial';
 import { KardexModal } from '../components/inventario/KardexModal';
 import { MermasList } from '../components/inventario/MermasList';
 import { MermaForm } from '../components/inventario/MermaForm';
@@ -34,9 +33,7 @@ export const Inventario = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMermaModalOpen, setIsMermaModalOpen] = useState(false);
-  const [modalStep, setModalStep] = useState(1); // 1 = form insumo, 2 = compra inicial
   const [editingInsumo, setEditingInsumo] = useState(null);
-  const [createdInsumo, setCreatedInsumo] = useState(null);
   const [eliminandoInsumo, setEliminandoInsumo] = useState(null);
   const [selectedKardexInsumo, setSelectedKardexInsumo] = useState(null);
   
@@ -89,11 +86,6 @@ export const Inventario = () => {
       {
         target: '.tour-inventario-add',
         content: 'Usa este botón para crear nuevos insumos. Recuerda definir bien tu Unidad Base (ej. gramos) y Unidad de Compra (ej. Kilos).',
-      },
-      {
-        target: '.tour-inventario-lista',
-        content: 'Aquí verás las tarjetas de todos tus insumos en tiempo real. Haz clic en el botón de "Detalles" (Kardex) de cada tarjeta para ver su historial completo de entradas, salidas y ajustes.',
-        placement: 'center',
       }
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,48 +93,48 @@ export const Inventario = () => {
 
   const handleOpenModal = (insumo = null) => {
     setEditingInsumo(insumo);
-    setCreatedInsumo(null);
-    setModalStep(1);
-    setIsModalOpen(true);
-  };
-
-  const handleOpenCompraInicial = (insumo) => {
-    setEditingInsumo(null);
-    setCreatedInsumo(insumo);
-    setModalStep(2);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setEditingInsumo(null);
-    setCreatedInsumo(null);
-    setModalStep(1);
     setIsModalOpen(false);
   };
 
-  // Paso 1: Crear Insumo
-  const handleInsumoSubmit = async (formData) => {
+  // Crear o Editar Insumo
+  const handleInsumoSubmit = async ({ insumoData, compraData }) => {
     try {
-      const insumoData = {
-        ...formData,
+      const dataToSave = {
+        ...insumoData,
         restaurante_id: currentRestaurant?.id
       };
 
       if (editingInsumo) {
-        await insumosService.updateInsumo(editingInsumo.id, insumoData);
+        await insumosService.updateInsumo(editingInsumo.id, dataToSave);
         toast.success('¡Insumo actualizado correctamente!');
         handleCloseModal();
         await loadData();
       } else {
-        const newInsumo = await insumosService.createInsumo(insumoData);
+        const newInsumo = await insumosService.createInsumo(dataToSave);
         toast.success('¡Insumo creado correctamente!');
         
-        // Pasamos al paso 2
-        setCreatedInsumo(newInsumo);
-        setModalStep(2);
-        // Recargamos silenciosamente los insumos para que la tabla de fondo se actualice
-        const insumosList = currentRestaurant?.id ? await insumosService.getInsumos(currentRestaurant?.id) : [];
-        setInsumos(insumosList || []);
+        if (compraData) {
+          const detalles = [{
+              insumo_id: newInsumo.id,
+              cantidad: compraData.cantidad,
+              precio_unitario: compraData.costo_total / compraData.cantidad,
+              fecha_caducidad: compraData.fecha_caducidad
+          }];
+          
+          const estadoCompra = (compraData.pagarDeCaja && cajaActiva) ? 'pagada' : 'pendiente';
+          const cajaId = (compraData.pagarDeCaja && cajaActiva) ? cajaActiva.id : null;
+          
+          await comprasService.registrarCompra(currentRestaurant?.id, compraData.proveedor_id, estadoCompra, detalles, cajaId);
+          toast.success('Compra inicial registrada');
+        }
+
+        handleCloseModal();
+        await loadData();
       }
       
     } catch (error) {
@@ -168,29 +160,6 @@ export const Inventario = () => {
       }
   };
 
-  // Paso 2: Registrar compra inicial
-  const handleCompraInicialSubmit = async ({ proveedor_id, cantidad, costo_total, fecha_caducidad, pagarDeCaja }) => {
-      try {
-          const detalles = [{
-              insumo_id: createdInsumo.id,
-              cantidad: cantidad,
-              precio_unitario: costo_total / cantidad,
-              fecha_caducidad: fecha_caducidad
-          }];
-          
-          const estadoCompra = (pagarDeCaja && cajaActiva) ? 'pagada' : 'pendiente';
-          const cajaId = (pagarDeCaja && cajaActiva) ? cajaActiva.id : null;
-          
-          await comprasService.registrarCompra(currentRestaurant?.id, proveedor_id, estadoCompra, detalles, cajaId);
-          
-          toast.success('Compra inicial registrada');
-          handleCloseModal();
-          await loadData();
-      } catch (err) {
-          console.error(err);
-          toast.error('Error al registrar compra inicial');
-      }
-  };
 
   const confirmEliminarInsumo = async () => {
     if (!eliminandoInsumo) return;
@@ -243,26 +212,6 @@ export const Inventario = () => {
     );
   }, [insumos, searchTerm]);
 
-  // UI del Stepper para el Modal
-  const modalTitle = (
-    <div className="flex items-center gap-3 text-sm select-none">
-      <div className={`flex items-center gap-2 ${modalStep === 1 ? 'text-blue-700 font-bold' : 'text-emerald-600 font-medium'}`}>
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${modalStep === 1 ? 'bg-blue-600 text-white shadow-sm' : 'bg-emerald-100 text-emerald-700'}`}>
-          {modalStep === 1 ? '1' : '✓'}
-        </div>
-        Datos Base
-      </div>
-      
-      <div className={`w-8 h-[2px] rounded-full ${modalStep === 2 ? 'bg-blue-600' : 'bg-slate-200'}`}></div>
-      
-      <div className={`flex items-center gap-2 ${modalStep === 2 ? 'text-blue-700 font-bold' : 'text-slate-400 font-medium'}`}>
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${modalStep === 2 ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
-          2
-        </div>
-        Compra Inicial
-      </div>
-    </div>
-  );
 
   // Variantes de animación
   const modalVariants = {
@@ -347,7 +296,6 @@ export const Inventario = () => {
                   onEdit={handleOpenModal} 
                   onDelete={handleDelete} 
                   onRestore={handleRestore}
-                  onInitialPurchase={handleOpenCompraInicial}
                   onViewKardex={setSelectedKardexInsumo}
                 />
               ) : (
@@ -364,25 +312,17 @@ export const Inventario = () => {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={modalStep === 2 ? null : handleCloseModal} // Prevenir cierre fácil en paso 2 sin skipear
-        title={editingInsumo ? 'Editar Insumo' : modalTitle}
+        onClose={handleCloseModal}
+        title={editingInsumo ? 'Editar Insumo' : 'Nuevo Insumo'}
         maxWidth="max-w-3xl"
       >
-        {modalStep === 1 ? (
-            <InsumoForm
-              onSubmit={handleInsumoSubmit}
-              defaultValues={editingInsumo}
-            />
-        ) : (
-            <InsumoCompraInicial
-              insumo={createdInsumo}
-              proveedores={proveedores}
-              cajaActiva={cajaActiva}
-              onAddProveedor={handleAddProveedor}
-              onSubmit={handleCompraInicialSubmit}
-              onSkip={() => handleCloseModal()}
-            />
-        )}
+        <InsumoForm
+          onSubmit={handleInsumoSubmit}
+          defaultValues={editingInsumo}
+          proveedores={proveedores}
+          cajaActiva={cajaActiva}
+          onAddProveedor={handleAddProveedor}
+        />
       </Modal>
 
       {selectedKardexInsumo && (

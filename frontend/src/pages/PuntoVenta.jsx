@@ -77,10 +77,12 @@ export const PuntoVenta = () => {
       {
         target: '.tour-pos-catalogo',
         content: 'Toca los platillos para agregarlos a la venta. Si un platillo no tiene stock preparado, no podrás venderlo.',
+        placement: 'right'
       },
       {
         target: '.tour-pos-ticket',
         content: 'Aquí verás el resumen de la compra. Al Proceder al Pago, el dinero se sumará a la caja y el stock se descontará automáticamente.',
+        placement: 'left'
       }
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps

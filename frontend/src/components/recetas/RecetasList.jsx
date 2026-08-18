@@ -129,7 +129,7 @@ export const RecetasList = ({ recetas, onEdit, onDelete, onViewResumen, onPrepar
         return (
           <div 
             key={receta.id} 
-            className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300 flex flex-col relative group hover:-translate-y-0.5"
+            className={`bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col relative group hover:-translate-y-0.5 ${alertaMargen ? 'border-2 border-red-500 animate-alert-border' : 'border border-slate-200'}`}
           >
             {/* Imagen Placeholder Pequeña */}
             <div className={`h-16 relative flex items-center justify-center shrink-0 rounded-t-xl overflow-hidden ${isSubreceta ? 'bg-gradient-to-br from-indigo-50 to-indigo-100' : 'bg-gradient-to-br from-slate-100 to-slate-200'}`}>
@@ -139,7 +139,8 @@ export const RecetasList = ({ recetas, onEdit, onDelete, onViewResumen, onPrepar
                 <ChefHat size={24} className="text-slate-300 group-hover:scale-110 transition-transform duration-300" />
               )}
               {alertaMargen && !isSubreceta && (
-                <div className="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                <div className="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
+                  <AlertTriangle size={10} className="animate-pulse" />
                   Alerta
                 </div>
               )}
