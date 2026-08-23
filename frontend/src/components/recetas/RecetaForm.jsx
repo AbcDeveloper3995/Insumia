@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
-import { Plus, Trash2, Calculator, Info } from 'lucide-react';
+import { Plus, Trash2, Calculator, Info, AlertTriangle } from 'lucide-react';
 import { insumosService } from '../../services/api/insumos';
 import { recetasService } from '../../services/api/recetas';
 import { useAuth } from '../../context/AuthContext';
@@ -214,9 +214,9 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
           <button
             type="button"
             onClick={() => append({ item_id: '', cantidad_uso: '' })}
-            className="flex items-center space-x-1 px-3 py-1.5 bg-white border border-slate-300 text-blue-600 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium cursor-pointer"
+            className="flex items-center space-x-1 px-3 py-1.5 bg-white border border-slate-300 text-blue-600 rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium cursor-pointer group"
           >
-            <Plus size={16} />
+            <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
             <span>Agregar</span>
           </button>
         </div>
@@ -251,12 +251,17 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                         control={control}
                         rules={{ required: true }}
                         render={({ field }) => {
+                          const selectedItemIds = watchIngredientes.map(ing => ing.item_id).filter(Boolean);
                           const ingredientOptions = [];
                           if (insumos.length > 0) {
                             ingredientOptions.push({
                               label: 'Insumos Crudos',
                               options: insumos
-                                .filter(i => i.activo !== false || watchIngredientes.some(ing => ing.item_id === `insumo_${i.id}`))
+                                .filter(i => {
+                                  const isSelectedInThisRow = field.value === `insumo_${i.id}`;
+                                  const isSelectedAnywhere = selectedItemIds.includes(`insumo_${i.id}`);
+                                  return (i.activo !== false || isSelectedInThisRow) && (!isSelectedAnywhere || isSelectedInThisRow);
+                                })
                                 .map(insumo => ({
                                   value: `insumo_${insumo.id}`,
                                   label: `${insumo.nombre} ${insumo.activo === false ? '(Archivado)' : ''} (usa ${insumo.unidad_base})`
@@ -266,7 +271,13 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                           if (subrecetas.length > 0) {
                             ingredientOptions.push({
                               label: 'Subrecetas (Lotes/Preparaciones)',
-                              options: subrecetas.map(sub => ({
+                              options: subrecetas
+                                .filter(sub => {
+                                  const isSelectedInThisRow = field.value === `subreceta_${sub.id}`;
+                                  const isSelectedAnywhere = selectedItemIds.includes(`subreceta_${sub.id}`);
+                                  return !isSelectedAnywhere || isSelectedInThisRow;
+                                })
+                                .map(sub => ({
                                 value: `subreceta_${sub.id}`,
                                 label: `${sub.nombre} (Produce ${sub.rendimiento} u.)`
                               }))
@@ -320,6 +331,16 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                   </div>
 
                   {currentItemId && (
+                    <>
+                      {currentItemId.startsWith('subreceta_') && subrecetas.find(s => s.id === currentItemId.replace('subreceta_', ''))?.stock_actual <= 0 && (
+                        <div className="flex items-start gap-1.5 p-2 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 text-[11px] mb-2 mt-1">
+                          <AlertTriangle size={14} className="shrink-0 mt-0.5 text-amber-500" />
+                          <p>
+                            <strong>¡Atención!</strong> Esta subreceta tiene 0 unidades en stock actualmente.
+                            Recuerda que Insumia no te permitirá preparar este platillo hasta que vayas y elabores lotes de esta subreceta.
+                          </p>
+                        </div>
+                      )}
                     <div className="flex items-center text-xs justify-end pr-10 pt-1 mt-1 border-t border-slate-100">
                       <span className="text-slate-400 mr-3 flex items-center gap-1">
                           Costo Base: 
@@ -342,6 +363,7 @@ export const RecetaForm = ({ onSubmit, defaultValues = null, isLoading = false }
                         ${costoDesglose.toFixed(2)}
                       </span>
                     </div>
+                    </>
                   )}
                 </div>
               );

@@ -10,13 +10,14 @@ import { supabase } from '../services/api/client';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
 import { useTour } from '../context/TourContext';
+import { useCaja } from '../context/CajaContext';
 
 export const PuntoVenta = () => {
   const { session, currentRestaurant } = useAuth();
   const navigate = useNavigate();
+  const { cajaActiva, refreshCaja } = useCaja();
 
   const [recetas, setRecetas] = useState([]);
-  const [cajaActiva, setCajaActiva] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -41,10 +42,8 @@ export const PuntoVenta = () => {
         const restauranteId = currentRestaurant?.id;
         if (!restauranteId) return;
 
-        const caja = await cajaService.getCajaAbierta(restauranteId);
-        setCajaActiva(caja);
-        if (caja) {
-           const movs = await cajaService.getMovimientos(caja.id);
+        if (cajaActiva) {
+           const movs = await cajaService.getMovimientos(cajaActiva.id);
            setMovimientos(movs);
         } else {
            setMovimientos([]);
@@ -63,7 +62,7 @@ export const PuntoVenta = () => {
 
   useEffect(() => {
     loadData();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, cajaActiva]);
 
   const { registerPageTour } = useTour();
 
@@ -121,6 +120,7 @@ export const PuntoVenta = () => {
       }
       setShowTurnoModal(null);
       setTurnoFormData({ monto: '', concepto: '', tipo: 'ingreso' });
+      await refreshCaja();
       loadData();
     } catch (error) {
       setTurnoErrorMsg(error.message || 'Error al procesar la solicitud');
@@ -307,7 +307,7 @@ export const PuntoVenta = () => {
             </div>
           </div>
         </div>
-        <button onClick={() => navigate('/recetas')} className="bg-blue-600 text-white font-bold px-6 py-3 rounded-xl">Crear Recetas</button>
+        <button onClick={() => navigate('/recetas')} className="bg-blue-600 text-white font-bold px-6 py-3 rounded-xl cursor-pointer">Crear Recetas</button>
       </div>
     );
   }
@@ -391,7 +391,7 @@ export const PuntoVenta = () => {
                         <span className="text-2xl font-black text-slate-900 tracking-tighter">${Number(platillo.precio_venta).toFixed(2)}</span>
                       </div>
                       <div className="h-12 w-12 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-md transform group-hover:scale-105">
-                        <Plus size={24} strokeWidth={2.5} />
+                        <Plus size={24} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-300" />
                       </div>
                     </div>
                   </div>
@@ -429,7 +429,7 @@ export const PuntoVenta = () => {
                     <div className="flex items-center space-x-1 bg-slate-50 rounded-xl p-1 border border-slate-200/60">
                       <button onClick={() => modificarCantidad(item.receta.id, -1)} className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-lg shadow-sm transition-all"><Minus size={16} strokeWidth={2.5} /></button>
                       <span className="font-bold w-10 text-center text-base text-slate-800">{item.cantidad}</span>
-                      <button onClick={() => modificarCantidad(item.receta.id, 1)} className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-lg shadow-sm transition-all"><Plus size={16} strokeWidth={2.5} /></button>
+                      <button onClick={() => modificarCantidad(item.receta.id, 1)} className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-lg shadow-sm transition-all group"><Plus size={16} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-300" /></button>
                     </div>
                     <button onClick={() => eliminarDelCarrito(item.receta.id)} className="p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover/item:opacity-100"><Trash2 size={18} /></button>
                   </div>

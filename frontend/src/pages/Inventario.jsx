@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { insumosService } from '../services/api/insumos';
 import { comprasService } from '../services/api/compras';
 import { cajaService } from '../services/api/caja';
+import { finanzasService } from '../services/api/finanzas';
 import { Modal } from '../components/common/Modal';
 import { InsumoForm } from '../components/inventario/InsumoForm';
 import { InsumosList } from '../components/inventario/InsumosList';
@@ -126,15 +127,28 @@ export const Inventario = () => {
               fecha_caducidad: compraData.fecha_caducidad
           }];
           
-          const estadoCompra = (compraData.pagarDeCaja && cajaActiva) ? 'pagada' : 'pendiente';
-          const cajaId = (compraData.pagarDeCaja && cajaActiva) ? cajaActiva.id : null;
+          const estadoCompra = compraData.fuentePago !== 'pendiente' ? 'pagada' : 'pendiente';
+          const cajaId = compraData.fuentePago === 'caja' && cajaActiva ? cajaActiva.id : null;
           
-          await comprasService.registrarCompra(currentRestaurant?.id, compraData.proveedor_id, estadoCompra, detalles, cajaId);
+          const compraId = await comprasService.registrarCompra(currentRestaurant?.id, compraData.proveedor_id, estadoCompra, detalles, cajaId, compraData.fuentePago);
+          
+          if (compraData.fuentePago === 'banco') {
+              await finanzasService.registrarMovimientoGlobal(
+                  currentRestaurant?.id,
+                  'egreso',
+                  compraData.costo_total,
+                  'compra_proveedor',
+                  'Pago directo de factura a proveedor (Insumo Nuevo)',
+                  compraId
+              );
+          }
+          
           toast.success('Compra inicial registrada');
         }
 
         handleCloseModal();
         await loadData();
+        window.dispatchEvent(new Event('refreshAlerts'));
       }
       
     } catch (error) {

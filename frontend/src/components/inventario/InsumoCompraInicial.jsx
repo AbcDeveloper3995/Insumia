@@ -52,6 +52,25 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
     });
   };
 
+  const safeCalculate = () => {
+    try {
+      if (cantidad === undefined || cantidad === null || cantidad === '' ||
+          costoTotal === undefined || costoTotal === null || costoTotal === '') {
+        return null;
+      }
+      const cant = Number(cantidad);
+      const costo = Number(costoTotal);
+      if (isNaN(cant) || isNaN(costo) || cant <= 0 || costo < 0) return null;
+      const res = costo / cant;
+      if (!isFinite(res)) return null;
+      return res.toFixed(2);
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const calculatedValue = safeCalculate();
+
   return (
     <div className="flex flex-col space-y-6">
       <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
@@ -156,10 +175,10 @@ export const InsumoCompraInicial = ({ insumo, proveedores, cajaActiva, onAddProv
           </div>
         </div>
 
-        {cantidad && costoTotal && (
+        {calculatedValue !== null && (
           <div className="bg-slate-50 p-3 rounded-lg text-right mt-2">
             <p className="text-xs text-slate-500">
-              Costo unitario calculado: <span className="font-bold text-slate-700">${(Number(costoTotal)/Number(cantidad)).toFixed(2)}</span> / {insumo?.unidad_compra}
+              Costo unitario calculado: <span className="font-bold text-slate-700">${calculatedValue}</span> / {insumo?.unidad_compra}
             </p>
           </div>
         )}

@@ -18,8 +18,9 @@ export const PrepararLoteModal = ({ receta, onClose, onSuccess }) => {
 
     setLoading(true);
     try {
-      await recetasService.prepararReceta(currentRestaurant.id, receta.id, cantidad);
-      toast.success(`Se produjeron ${cantidad} unidades de ${receta.nombre}`);
+      const cantidadEnviar = receta.tipo === 'subreceta' ? cantidad * (receta.rendimiento || 1) : cantidad;
+      await recetasService.prepararReceta(currentRestaurant.id, receta.id, cantidadEnviar);
+      toast.success(`Se produjeron ${cantidadEnviar} unidades de ${receta.nombre}`);
       onSuccess();
     } catch (error) {
       console.error('Error al preparar receta:', error);
@@ -59,7 +60,7 @@ export const PrepararLoteModal = ({ receta, onClose, onSuccess }) => {
             </div>
 
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Cantidad a producir
+              {receta.tipo === 'subreceta' ? 'Cantidad de Lotes a preparar' : 'Cantidad a producir'}
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -71,11 +72,14 @@ export const PrepararLoteModal = ({ receta, onClose, onSuccess }) => {
                 onChange={(e) => setCantidad(Number(e.target.value))}
                 className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all font-bold text-lg"
               />
-              <span className="text-slate-500 font-medium">unidades</span>
+              <span className="text-slate-500 font-medium">
+                {receta.tipo === 'subreceta' ? 'lotes' : 'unidades'}
+              </span>
             </div>
             {receta.tipo === 'subreceta' && (
-              <p className="text-[10px] text-slate-400 mt-1">
-                Recuerda que su rendimiento base es de {receta.rendimiento} unidades por receta. El sistema calculará la porción correcta.
+              <p className="text-[11px] text-blue-600 mt-2 font-semibold bg-blue-50/50 p-2 rounded-lg border border-blue-100">
+                1 lote = {receta.rendimiento} unidades de stock.<br/>
+                Se sumarán {cantidad * (receta.rendimiento || 1)} unidades al stock final.
               </p>
             )}
           </div>

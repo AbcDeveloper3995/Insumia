@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { cajaService } from '../services/api/caja';
+import { finanzasService } from '../services/api/finanzas';
 import { motion } from 'framer-motion';
 import { Building, AlertTriangle, ShoppingCart, ArrowRightLeft, Clock, DollarSign, TrendingDown, TrendingUp, CalendarDays, CheckCircle2, Wallet, CreditCard, Banknote, Info } from 'lucide-react';
 import { supabase } from '../services/api/client';
@@ -19,6 +20,12 @@ export const Finanzas = () => {
     descuadreHistorico: 0,
     inversionTotal: 0
   });
+  
+  // Capital Global
+  const [capitalActual, setCapitalActual] = useState(0);
+  const [showCapitalModal, setShowCapitalModal] = useState(false);
+  const [capitalInput, setCapitalInput] = useState('');
+  const [isSettingCapital, setIsSettingCapital] = useState(false);
 
   const loadData = async () => {
     try {
@@ -61,6 +68,15 @@ export const Finanzas = () => {
           }
       });
 
+      // 4. Cargar Capital Global
+      const capital = await finanzasService.getCapitalActual(restauranteId);
+      setCapitalActual(capital);
+      
+      const movimientosCap = await finanzasService.getMovimientosCapital(restauranteId);
+      if (movimientosCap.length === 0 && capital === 0) {
+          setShowCapitalModal(true);
+      }
+
       setCajasHistoricas(cajasData || []);
       setStats({ cuentasPorPagar, descuadreHistorico: descuadre, inversionTotal });
 
@@ -95,6 +111,22 @@ export const Finanzas = () => {
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleSetCapital = async (e) => {
+    e.preventDefault();
+    if (!capitalInput || isNaN(capitalInput) || Number(capitalInput) <= 0) return;
+    
+    try {
+        setIsSettingCapital(true);
+        await finanzasService.establecerCapitalInicial(currentRestaurant.id, Number(capitalInput));
+        setCapitalActual(Number(capitalInput));
+        setShowCapitalModal(false);
+    } catch (error) {
+        console.error('Error al establecer capital:', error);
+    } finally {
+        setIsSettingCapital(false);
+    }
+  };
 
   // Cálculos para la caja activa (si existe)
   const totalesActivos = movimientosActivos.reduce((acc, curr) => {
@@ -133,7 +165,16 @@ export const Finanzas = () => {
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Finanzas y Tesorería</h1>
-            <p className="text-slate-500 mt-1 text-sm">Monitorización en tiempo real del turno actual, compras y desempeño histórico.</p>
+            <p className="text-slate-500 mt-1 text-sm">Monitorización del Presupuesto General y Cajas del Día.</p>
+          </div>
+          <div className="bg-emerald-50 border border-emerald-100 px-6 py-3 rounded-2xl flex items-center gap-4">
+             <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                <Banknote size={24} />
+             </div>
+             <div>
+                <p className="text-[10px] font-bold text-emerald-600 tracking-widest uppercase">Presupuesto General (Banco)</p>
+                <h2 className="text-2xl font-black text-emerald-700">${capitalActual.toFixed(2)}</h2>
+             </div>
           </div>
         </div>
 
@@ -380,6 +421,52 @@ export const Finanzas = () => {
             </div>
         </div>
       </div>
+      
+      {/* MODAL CONFIGURACIÓN CAPITAL INICIAL */}
+      {showCapitalModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl text-left border border-slate-100">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                      <Banknote size={32} />
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-800 mb-2 text-center tracking-tight">Configuración Financiera</h2>
+                  <p className="text-slate-500 text-sm text-center mb-6">
+                      Para llevar un control preciso de tus compras y ganancias, Insumia necesita saber con qué presupuesto arranca tu negocio hoy.
+                  </p>
+                  
+                  <form onSubmit={handleSetCapital} className="space-y-4">
+                      <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Presupuesto / Capital Líquido Inicial ($)</label>
+                          <div className="relative">
+                              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                  <DollarSign className="h-5 w-5 text-slate-400" />
+                              </div>
+                              <input 
+                                  type="number" 
+                                  step="0.01" 
+                                  min="1" 
+                                  required 
+                                  value={capitalInput} 
+                                  onChange={e => setCapitalInput(e.target.value)} 
+                                  placeholder="Ej. 10000.00" 
+                                  className="w-full bg-slate-50 border border-slate-200 pl-11 pr-4 py-4 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-bold text-lg transition-all" 
+                              />
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-2 font-medium">Este dinero representa el fondo total de tu restaurante, desde el cual pagarás a proveedores por transferencia y donde se acumularán tus ganancias al cerrar turnos.</p>
+                      </div>
+                      <div className="pt-4">
+                          <button 
+                              type="submit" 
+                              disabled={!capitalInput || isSettingCapital} 
+                              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold shadow-[0_8px_16px_rgb(37,99,235,0.2)] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                              {isSettingCapital ? <LoadingSpinner text="" /> : 'Establecer Capital Inicial'}
+                          </button>
+                      </div>
+                  </form>
+              </motion.div>
+          </div>
+      )}
     </motion.div>
   );
 };

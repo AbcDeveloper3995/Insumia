@@ -170,13 +170,22 @@ export const Recetas = () => {
               />
             </div>
 
-            <button
-              onClick={() => handleOpenModal()}
-              className="tour-recetas-add flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
-            >
-              <Plus size={18} />
-              <span>Nueva Receta</span>
-            </button>
+            <div className="relative group/btntooltip">
+              <button
+                onClick={() => handleOpenModal()}
+                disabled={insumos.length === 0}
+                className={`tour-recetas-add flex justify-center items-center space-x-2 px-5 py-2.5 font-medium rounded-xl transition-all group ${insumos.length === 0 ? 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-70' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer'}`}
+              >
+                <Plus size={18} className={insumos.length === 0 ? '' : 'group-hover:rotate-90 transition-transform duration-300'} />
+                <span>Nueva Receta</span>
+              </button>
+              
+              {insumos.length === 0 && (
+                <div className="absolute top-full right-0 mt-2 w-64 p-3 bg-slate-800 text-white text-xs rounded-xl opacity-0 invisible group-hover/btntooltip:opacity-100 group-hover/btntooltip:visible transition-all z-[100] shadow-xl border border-slate-700 font-normal pointer-events-none text-center">
+                  Debes registrar al menos un insumo en tu inventario antes de crear recetas.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

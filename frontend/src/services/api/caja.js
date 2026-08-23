@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { finanzasService } from './finanzas';
 
 export const cajaService = {
   /**
@@ -60,7 +61,7 @@ export const cajaService = {
     // Calcular monto final esperado primero
     const { data: movimientos, error: movError } = await supabase
       .from('movimientos_caja')
-      .select('monto, tipo, metodo_pago')
+      .select('monto, tipo, metodo_pago, concepto')
       .eq('caja_id', cajaId);
       
     if (movError) throw movError;
@@ -90,6 +91,49 @@ export const cajaService = {
       .single();
 
     if (error) throw error;
+    
+    // ==========================================
+    // INYECCIÓN AL CAPITAL GLOBAL
+    // ==========================================
+    // Encontrar el monto inicial
+    const movInicial = movimientos.find(m => m.concepto === 'Fondo de Caja Inicial' && m.tipo === 'ingreso');
+    const montoInicial = movInicial ? Number(movInicial.monto) : 0;
+    
+    // Ganancia en efectivo = Lo que hay realmente en la caja menos lo que se puso de fondo
+    const gananciaEfectivo = montoFinalReal - montoInicial;
+    
+    // Ganancia por otros métodos (tarjeta/transferencia) - todo esto es ingreso directo
+    let gananciaOtrosMetodos = 0;
+    movimientos.forEach(m => {
+        if (m.metodo_pago !== 'efectivo') {
+            if (m.tipo === 'ingreso') gananciaOtrosMetodos += Number(m.monto);
+            if (m.tipo === 'egreso') gananciaOtrosMetodos -= Number(m.monto);
+        }
+    });
+    
+    const gananciaTotal = gananciaEfectivo + gananciaOtrosMetodos;
+    
+    // Enviar al capital global si es mayor a 0 (o si hay pérdida, mandarlo como ajuste/egreso)
+    if (gananciaTotal > 0) {
+        await finanzasService.registrarMovimientoGlobal(
+            data.restaurante_id,
+            'ingreso',
+            gananciaTotal,
+            'cierre_caja',
+            `Liquidación de Turno (Efectivo: $${gananciaEfectivo}, Otros: $${gananciaOtrosMetodos})`,
+            cajaId
+        );
+    } else if (gananciaTotal < 0) {
+        await finanzasService.registrarMovimientoGlobal(
+            data.restaurante_id,
+            'egreso',
+            Math.abs(gananciaTotal),
+            'cierre_caja',
+            `Pérdida en Turno (Faltante/Descuadre)`,
+            cajaId
+        );
+    }
+    
     return data;
   },
 

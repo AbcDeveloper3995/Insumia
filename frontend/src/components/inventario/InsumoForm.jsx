@@ -1,7 +1,7 @@
 import { useForm, Controller } from 'react-hook-form';
 import { UNIDADES } from '../../constants';
 import { useEffect, useState } from 'react';
-import { Lock, Unlock, ShoppingCart, Plus } from 'lucide-react';
+import { Lock, Unlock, ShoppingCart, Plus, Calculator } from 'lucide-react';
 import { CustomSelect } from '../ui/CustomSelect';
 
 export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false, proveedores = [], cajaActiva = null, onAddProveedor = null }) => {
@@ -16,12 +16,14 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false, 
       porcentaje_rendimiento: 100,
       cantidad_actual_base: '',
       umbral_minimo: '',
-      dias_alerta_caducidad: 7
+      dias_alerta_caducidad: 7,
+      fuentePago: 'pendiente'
     }
   });
 
   const unidadCompra = watch('unidad_compra');
   const unidadBase = watch('unidad_base');
+  const fuentePago = watch('fuentePago');
   
   // Estados
   const [bloquearReceta, setBloquearReceta] = useState(true);
@@ -109,7 +111,8 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false, 
       factor_conversion: data.factor_conversion,
       porcentaje_rendimiento: data.porcentaje_rendimiento,
       umbral_minimo: data.umbral_minimo,
-      dias_alerta_caducidad: data.dias_alerta_caducidad
+      dias_alerta_caducidad: data.dias_alerta_caducidad,
+      costo_unidad_compra: data.costo_unidad_compra || 0
     };
 
     let compraData = null;
@@ -119,12 +122,15 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false, 
         cantidad: Number(data.cantidad_compra),
         costo_total: Number(data.costo_total_compra),
         fecha_caducidad: data.fecha_caducidad_compra || null,
-        pagarDeCaja: data.pagar_de_caja || false
+        fuentePago: data.fuentePago || 'pendiente'
       };
       // Validation for required purchase fields
       if (!compraData.proveedor_id) return alert('Selecciona un proveedor para la compra inicial.');
       if (!compraData.cantidad || compraData.cantidad <= 0) return alert('Ingresa una cantidad comprada válida.');
       if (!compraData.costo_total || compraData.costo_total < 0) return alert('Ingresa un costo de compra válido.');
+      
+      // Calculate and inject the initial unit cost
+      insumoData.costo_unidad_compra = compraData.costo_total / compraData.cantidad;
     }
 
     onSubmit({ insumoData, compraData });
@@ -147,6 +153,25 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false, 
   // Watch for dynamic calculation
   const watchCantidadCompra = watch('cantidad_compra');
   const watchCostoTotalCompra = watch('costo_total_compra');
+
+  const safeCalculateCosto = () => {
+    try {
+      if (watchCantidadCompra === undefined || watchCantidadCompra === null || watchCantidadCompra === '' ||
+          watchCostoTotalCompra === undefined || watchCostoTotalCompra === null || watchCostoTotalCompra === '') {
+        return null;
+      }
+      const cant = Number(watchCantidadCompra);
+      const costo = Number(watchCostoTotalCompra);
+      if (isNaN(cant) || isNaN(costo) || cant <= 0 || costo < 0) return null;
+      const res = costo / cant;
+      if (!isFinite(res)) return null;
+      return res.toFixed(2);
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const calculatedCosto = safeCalculateCosto();
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
@@ -346,10 +371,10 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false, 
               </div>
             </div>
 
-            {watchCantidadCompra && watchCostoTotalCompra && (
+            {calculatedCosto !== null && (
               <div className="bg-white px-4 py-3 border border-slate-200 rounded-xl text-slate-600 inline-flex items-center gap-2 w-full text-sm">
                 <Calculator size={16} className="text-blue-500 shrink-0" />
-                Costo calculado: <span className="font-bold text-slate-800 text-base">${(Number(watchCostoTotalCompra)/Number(watchCantidadCompra)).toFixed(2)}</span> / {unidadCompra}
+                Costo calculado: <span className="font-bold text-slate-800 text-base">${calculatedCosto}</span> / {unidadCompra}
               </div>
             )}
           </div>
@@ -401,20 +426,33 @@ export const InsumoForm = ({ onSubmit, defaultValues = null, isLoading = false, 
         {/* Switch de pago movido al final */}
         {registrarCompra && (
           <div className="pt-2">
-            <div className={`w-full p-4 rounded-xl flex items-center justify-between gap-4 border ${!cajaActiva ? 'bg-slate-50 border-slate-200' : 'bg-blue-50/50 border-blue-200'}`}>
-              <div>
-                <p className="font-bold text-sm text-slate-800 flex items-center gap-2">
-                  Pagar Inmediatamente (Opcional)
-                  {!cajaActiva && <span className="bg-slate-200 text-slate-500 text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-widest">Caja Cerrada</span>}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {cajaActiva ? 'Se descontará el dinero de la caja activa. Si lo dejas apagado, se guardará como Cuenta por Pagar.' : 'No puedes pagar porque la caja está cerrada. Se guardará como Cuenta por Pagar.'}
-                </p>
+            <div className="flex flex-col gap-3">
+              <p className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                ¿Cómo deseas pagar esta factura?
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <label className={`relative flex flex-col p-3 rounded-xl cursor-pointer border-2 transition-all ${fuentePago === 'pendiente' ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-200'}`}>
+                   <input type="radio" value="pendiente" {...register('fuentePago')} className="sr-only" />
+                   <span className="text-sm font-bold text-slate-800 mb-1">A Crédito / Pendiente</span>
+                   <span className="text-[10px] text-slate-500 leading-tight">No se descuenta dinero ahora. Queda como cuenta por pagar.</span>
+                </label>
+
+                <label className={`relative flex flex-col p-3 rounded-xl border-2 transition-all ${!cajaActiva ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50' : fuentePago === 'caja' ? 'border-blue-500 bg-blue-50 cursor-pointer' : 'border-slate-200 bg-white hover:border-blue-200 cursor-pointer'}`}>
+                   <input type="radio" value="caja" disabled={!cajaActiva} {...register('fuentePago')} className="sr-only" />
+                   <span className="text-sm font-bold text-slate-800 mb-1 flex justify-between items-center">
+                       Caja Diaria
+                       {!cajaActiva && <span className="bg-slate-200 text-slate-500 text-[9px] px-1.5 py-0.5 rounded uppercase">Cerrada</span>}
+                   </span>
+                   <span className="text-[10px] text-slate-500 leading-tight">Descuenta el efectivo directamente de la caja del turno actual.</span>
+                </label>
+
+                <label className={`relative flex flex-col p-3 rounded-xl cursor-pointer border-2 transition-all ${fuentePago === 'banco' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-200'}`}>
+                   <input type="radio" value="banco" {...register('fuentePago')} className="sr-only" />
+                   <span className="text-sm font-bold text-slate-800 mb-1">Capital General (Banco)</span>
+                   <span className="text-[10px] text-slate-500 leading-tight">Transferencia desde la cuenta principal del negocio. No afecta la caja chica.</span>
+                </label>
               </div>
-              <label className={`relative inline-flex items-center shrink-0 ${!cajaActiva ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                <input type="checkbox" disabled={!cajaActiva} {...register('pagar_de_caja')} className="sr-only peer" />
-                <div className="w-12 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
             </div>
           </div>
         )}

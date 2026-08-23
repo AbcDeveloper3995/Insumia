@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { comprasService } from '../services/api/compras';
 import { insumosService } from '../services/api/insumos';
 import { cajaService } from '../services/api/caja';
+import { finanzasService } from '../services/api/finanzas';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Plus, AlertTriangle, Building, Search, X, Wallet, Edit, Trash2, Save, Info } from 'lucide-react';
 import { supabase } from '../services/api/client';
@@ -97,6 +98,7 @@ export const Compras = () => {
           const provs = await comprasService.getProveedores(restauranteId);
           setProveedores(provs);
           toast.success('Proveedor guardado');
+          window.dispatchEvent(new Event('refreshAlerts'));
       } catch (err) {
           toast.error('Error al guardar proveedor');
       }
@@ -135,14 +137,14 @@ export const Compras = () => {
 
   // Guardar Compra (desde el Modal)
   const handleRegistrarCompra = async (formData) => {
-      const { proveedor_id, pagarDeCaja, carrito } = formData;
+      const { proveedor_id, fuentePago, carrito } = formData;
       
       try {
           setIsSubmitting(true);
           const restauranteId = currentRestaurant?.id;
 
-          const estado = pagarDeCaja ? 'pagada' : 'pendiente';
-          const cajaId = pagarDeCaja ? cajaActiva.id : null;
+          const estado = fuentePago !== 'pendiente' ? 'pagada' : 'pendiente';
+          const cajaId = fuentePago === 'caja' ? cajaActiva.id : null;
           
           const detalles = [];
           
@@ -177,7 +179,19 @@ export const Compras = () => {
 
           // Nota: comprasService.registrarCompra deberá manejar 'fecha_caducidad' si está implementado, 
           // actualmente lo pasamos en el detalle.
-          await comprasService.registrarCompra(restauranteId, proveedor_id, estado, detalles, cajaId);
+          const compraId = await comprasService.registrarCompra(restauranteId, proveedor_id, estado, detalles, cajaId, fuentePago);
+          
+          if (fuentePago === 'banco') {
+              const totalCompra = carrito.reduce((acc, curr) => acc + (curr.costo_total || 0), 0);
+              await finanzasService.registrarMovimientoGlobal(
+                  restauranteId,
+                  'egreso',
+                  totalCompra,
+                  'compra_proveedor',
+                  'Pago directo de factura a proveedor',
+                  compraId
+              );
+          }
           
           toast.success('¡Compra registrada con éxito!');
           setIsModalOpen(false);
@@ -226,9 +240,9 @@ export const Compras = () => {
             <div className="flex flex-col sm:flex-row items-center gap-4">
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="tour-compras-add flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+                    className="tour-compras-add flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
                 >
-                    <Plus size={18} />
+                    <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
                     <span>Nueva Compra</span>
                 </button>
             </div>
@@ -251,8 +265,8 @@ export const Compras = () => {
                                 </div>
                                 <span className="tracking-tight text-lg">Proveedores</span>
                             </div>
-                            <button onClick={() => setIsAddingProveedor(true)} className="tour-compras-nuevo-proveedor flex items-center gap-1 text-sm bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-all shadow hover:shadow-md cursor-pointer active:scale-95 font-medium">
-                                <Plus size={16} /> Nuevo
+                            <button onClick={() => setIsAddingProveedor(true)} className="tour-compras-nuevo-proveedor flex items-center gap-1 text-sm bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-all shadow hover:shadow-md cursor-pointer active:scale-95 font-medium group">
+                                <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" /> Nuevo
                             </button>
                         </div>
                         <ul className="divide-y divide-slate-100/80">
@@ -346,7 +360,7 @@ export const Compras = () => {
                                     <p className="text-xs text-slate-500 font-medium">Liquida la factura con efectivo de tu caja o déjala en estado pendiente.</p>
                                 </div>
                             </div>
-                            <button onClick={() => setIsModalOpen(true)} className="relative z-10 bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-bold text-sm shadow-xl shadow-slate-900/20 hover:bg-slate-800 hover:shadow-2xl hover:shadow-slate-900/30 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-2 cursor-pointer group">
+                            <button onClick={() => setIsModalOpen(true)} className="relative z-10 bg-blue-600 text-white px-8 py-3.5 rounded-2xl font-bold text-sm shadow-xl shadow-blue-600/20 hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-2 cursor-pointer group">
                                 <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" /> Registrar Primera Compra
                             </button>
                         </div>
@@ -357,7 +371,9 @@ export const Compras = () => {
                                     <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-400 text-xs uppercase font-black tracking-widest">
                                         <th className="py-5 px-6">Fecha</th>
                                         <th className="py-5 px-6">Proveedor</th>
+                                        <th className="py-5 px-6">Detalle</th>
                                         <th className="py-5 px-6 text-right">Total</th>
+                                        <th className="py-5 px-6 text-center">Pago</th>
                                         <th className="py-5 px-6 text-center">Estado</th>
                                         {compras.some(c => c.estado === 'pendiente') && (
                                             <th className="py-5 px-6 text-center">Acciones</th>
@@ -368,8 +384,34 @@ export const Compras = () => {
                                     {compras.map(c => (
                                         <tr key={c.id} className="hover:bg-slate-50/50 transition-colors group">
                                             <td className="py-4 px-6 text-sm text-slate-500 font-medium">{new Date(c.fecha).toLocaleDateString()}</td>
-                                            <td className="py-4 px-6 text-sm font-bold text-slate-800 tracking-tight">{c.proveedores?.nombre}</td>
-                                            <td className="py-4 px-6 text-sm font-black text-slate-800 text-right">${Number(c.total).toFixed(2)}</td>
+                                            <td className="py-4 px-6 font-medium text-slate-800">{c.proveedores?.nombre || 'Desconocido'}</td>
+                                            <td className="py-4 px-6 text-sm text-slate-600">
+                                                {c.compra_detalles && c.compra_detalles.length > 0 ? (
+                                                    <div className="flex flex-col gap-0.5">
+                                                        {c.compra_detalles.map((det, idx) => (
+                                                            <span key={idx}>• {det.cantidad} {det.insumos?.unidad_compra} de {det.insumos?.nombre}</span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-slate-400 italic">Sin detalles</span>
+                                                )}
+                                            </td>
+                                            <td className="py-4 px-6 text-right font-bold text-slate-800">${Number(c.total).toFixed(2)}</td>
+                                            <td className="py-4 px-6 text-center">
+                                                {c.fuente_pago === 'banco' ? (
+                                                    <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-md text-[11px] font-bold">
+                                                        Capital Gral
+                                                    </span>
+                                                ) : c.fuente_pago === 'caja' ? (
+                                                    <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md text-[11px] font-bold">
+                                                        Caja Diaria
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2.5 py-1 rounded-md text-[11px] font-bold">
+                                                        Crédito
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="py-4 px-6 text-center">
                                                 <span className={`text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full inline-block ${c.estado === 'pagada' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                                                     {c.estado}

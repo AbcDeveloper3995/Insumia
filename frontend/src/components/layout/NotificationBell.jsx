@@ -79,6 +79,8 @@ export const NotificationBell = ({ isSidebarExpanded }) => {
   };
 
   useEffect(() => {
+    if (!currentRestaurant?.id) return;
+
     fetchAlertas();
     
     // Listener global para refrescar alertas desde otros componentes
@@ -96,7 +98,7 @@ export const NotificationBell = ({ isSidebarExpanded }) => {
       document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener('refreshAlerts', handleRefreshAlerts);
     };
-  }, []);
+  }, [currentRestaurant?.id]);
 
   const totalAlerts = alertas.stock.length + alertas.recetas.length + alertas.deudas.length + (alertas.descuadreCaja > 0 ? 1 : 0);
 

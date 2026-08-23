@@ -19,11 +19,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useTour } from '../../context/TourContext';
 import { authService } from '../../services/auth/authService';
 import { NotificationBell } from './NotificationBell';
+import { useCaja } from '../../context/CajaContext';
+import { Lock } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(true);
   const { session } = useAuth();
   const { startActivePageTour, hasActiveTour } = useTour();
+  const { cajaActiva, isLoadingCaja } = useCaja();
 
   const handleLogout = async () => {
     try {
@@ -34,14 +38,14 @@ export const Sidebar = () => {
   };
 
   const navItems = [
-    { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    { to: '/compras', icon: <Truck size={20} />, label: 'Compras' },
-    { to: '/inventario', icon: <Package size={20} />, label: 'Inventario' },
-    { to: '/recetas', icon: <ChefHat size={20} />, label: 'Recetas' },
-    { to: '/ventas', icon: <ShoppingCart size={20} />, label: 'Punto de Venta' },
-    { to: '/informes', icon: <BarChart3 size={20} />, label: 'Informes' },
-    { to: '/finanzas', icon: <Building size={20} />, label: 'Finanzas' },
-    { to: '/seleccionar-restaurante', icon: <Store size={20} />, label: 'Mis Restaurantes' },
+    { to: '/', icon: <LayoutDashboard size={20} />, label: 'Dashboard', requireCaja: true },
+    { to: '/compras', icon: <Truck size={20} />, label: 'Compras', requireCaja: true },
+    { to: '/inventario', icon: <Package size={20} />, label: 'Inventario', requireCaja: true },
+    { to: '/recetas', icon: <ChefHat size={20} />, label: 'Recetas', requireCaja: true },
+    { to: '/ventas', icon: <ShoppingCart size={20} />, label: 'Punto de Venta', requireCaja: false },
+    { to: '/informes', icon: <BarChart3 size={20} />, label: 'Informes', requireCaja: true },
+    { to: '/finanzas', icon: <Building size={20} />, label: 'Finanzas', requireCaja: true },
+    { to: '/seleccionar-restaurante', icon: <Store size={20} />, label: 'Mis Restaurantes', requireCaja: false },
   ];
 
   return (
@@ -61,28 +65,52 @@ export const Sidebar = () => {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) => `
-              flex items-center px-3 py-3 rounded-xl transition-all duration-200 cursor-pointer group relative overflow-hidden
-              ${isActive 
-                ? 'bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/20 translate-x-1' 
-                : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 font-medium'
-              }
-            `}
-          >
-            <div className={`flex-shrink-0 transition-transform duration-200 group-hover:scale-110`}>{item.icon}</div>
-            <span 
-              className={`ml-3 whitespace-nowrap transition-all duration-300
-                ${!isExpanded ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'}
+        {navItems.map((item) => {
+          const isLocked = item.requireCaja && !cajaActiva && !isLoadingCaja;
+          return (
+            <NavLink
+              key={item.to}
+              to={isLocked ? '#' : item.to}
+              onClick={(e) => {
+                if (isLocked) {
+                  e.preventDefault();
+                  toast('Debes abrir el turno en el Punto de Venta primero.', {
+                    icon: '🔒',
+                    style: {
+                      borderRadius: '10px',
+                      background: '#fff3cd',
+                      color: '#856404',
+                    },
+                  });
+                }
+              }}
+              className={({ isActive }) => `
+                flex items-center px-3 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden
+                ${isLocked ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400' : 'cursor-pointer'}
+                ${isActive && !isLocked
+                  ? 'bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/20 translate-x-1' 
+                  : !isLocked ? 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 font-medium' : ''
+                }
+                ${item.to === '/ventas' && !cajaActiva && !isLoadingCaja ? 'ring-2 ring-blue-500/50 bg-blue-50 text-blue-700 font-bold animate-pulse' : ''}
               `}
             >
-              {item.label}
-            </span>
-          </NavLink>
-        ))}
+              <div className={`flex-shrink-0 transition-transform duration-200 ${!isLocked && 'group-hover:scale-110'}`}>{item.icon}</div>
+              <span 
+                className={`ml-3 whitespace-nowrap transition-all duration-300 flex-1
+                  ${!isExpanded ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'}
+                `}
+              >
+                {item.label}
+              </span>
+              {isLocked && isExpanded && <Lock size={14} className="ml-auto text-slate-400" />}
+              {isLocked && !isExpanded && (
+                <div className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow-sm">
+                  <Lock size={10} className="text-slate-400" />
+                </div>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Footer / User Profile */}

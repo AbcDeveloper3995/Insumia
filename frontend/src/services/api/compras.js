@@ -49,7 +49,11 @@ export const comprasService = {
       .from('compras')
       .select(`
         *,
-        proveedores (nombre)
+        proveedores (nombre),
+        compra_detalles (
+           cantidad,
+           insumos (nombre, unidad_compra)
+        )
       `)
       .eq('restaurante_id', restauranteId)
       .order('fecha', { ascending: false });
@@ -76,14 +80,15 @@ export const comprasService = {
       return data || [];
   },
 
-  async registrarCompra(restauranteId, proveedorId, estado, detalles, cajaId = null) {
+  async registrarCompra(restauranteId, proveedorId, estado, detalles, cajaId = null, fuentePago = 'pendiente') {
     // Llama al RPC
     const { data, error } = await supabase.rpc('registrar_compra', {
       p_restaurante_id: restauranteId,
       p_proveedor_id: proveedorId,
       p_estado: estado,
       p_detalles: detalles,
-      p_caja_id: cajaId
+      p_caja_id: cajaId,
+      p_fuente_pago: fuentePago
     });
 
     if (error) throw error;

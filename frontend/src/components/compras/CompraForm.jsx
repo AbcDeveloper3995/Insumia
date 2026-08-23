@@ -5,7 +5,7 @@ import { UNIDADES } from '../../constants';
 
 export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoading = false }) => {
   const [proveedorId, setProveedorId] = useState('');
-  const [pagarDeCaja, setPagarDeCaja] = useState(false);
+  const [fuentePago, setFuentePago] = useState('pendiente');
   const [carrito, setCarrito] = useState([]);
   const [insumoSearch, setInsumoSearch] = useState('');
 
@@ -22,9 +22,8 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
     carrito.every(item => {
       const isCantidadValid = Number(item.cantidad) > 0;
       const isCostoValid = Number(item.costo_total) >= 0;
-      const isFechaValid = item.fecha_caducidad && String(item.fecha_caducidad).trim() !== '';
       
-      const validCompra = isCantidadValid && isCostoValid && isFechaValid;
+      const validCompra = isCantidadValid && isCostoValid;
 
       if (item.isNew) {
         return validCompra && 
@@ -79,7 +78,7 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
       alert('El carrito está vacío.');
       return;
     }
-    onSubmit({ proveedor_id: proveedorId, pagarDeCaja, carrito });
+    onSubmit({ proveedor_id: proveedorId, fuentePago, carrito });
   };
 
   return (
@@ -313,7 +312,20 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
 
                   <div className="text-right border-t border-slate-200 pt-2">
                      <p className="text-[10px] text-slate-500">
-                        Costo Unitario: <span className="font-bold text-slate-700">${item.cantidad > 0 ? (item.costo_total / item.cantidad).toFixed(2) : '0.00'}</span> / {item.insumo.unidad_compra}
+                        Costo Unitario: <span className="font-bold text-slate-700">${(() => {
+                          try {
+                            if (item.cantidad === undefined || item.cantidad === null || item.cantidad === '' ||
+                                item.costo_total === undefined || item.costo_total === null || item.costo_total === '') return '0.00';
+                            const cant = Number(item.cantidad);
+                            const costo = Number(item.costo_total);
+                            if (isNaN(cant) || isNaN(costo) || cant <= 0 || costo < 0) return '0.00';
+                            const res = costo / cant;
+                            if (!isFinite(res)) return '0.00';
+                            return res.toFixed(2);
+                          } catch (e) {
+                            return '0.00';
+                          }
+                        })()}</span> / {item.insumo.unidad_compra}
                      </p>
                   </div>
                 </div>
@@ -328,22 +340,33 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
               <span className="text-2xl font-black text-slate-800">${totalCompra.toFixed(2)}</span>
             </div>
 
-            <div className={`p-3 rounded-lg flex items-center justify-between border ${!cajaActiva ? 'bg-slate-50 border-slate-200' : 'bg-blue-50 border-blue-200'}`}>
-              <div>
-                <p className="font-bold text-sm text-slate-800 flex items-center gap-2">
-                  Pagar al Instante
-                  {!cajaActiva && <span className="bg-slate-200 text-slate-500 text-[10px] px-2 py-0.5 rounded uppercase">Caja Cerrada</span>}
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5 max-w-[200px] leading-tight">
-                  {cajaActiva 
-                    ? 'Se descontará efectivo de la caja. Si apagas esto, quedará como "Cuenta por Pagar".' 
-                    : 'No puedes pagar ahora porque la caja está cerrada. Se guardará como pendiente.'}
-                </p>
+            <div className="flex flex-col gap-3">
+              <p className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                ¿Cómo deseas pagar esta factura?
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <label className={`relative flex flex-col p-3 rounded-xl cursor-pointer border-2 transition-all ${fuentePago === 'pendiente' ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-200'}`}>
+                   <input type="radio" name="fuentePago" value="pendiente" checked={fuentePago === 'pendiente'} onChange={(e) => setFuentePago(e.target.value)} className="sr-only" />
+                   <span className="text-sm font-bold text-slate-800 mb-1">A Crédito / Pendiente</span>
+                   <span className="text-[10px] text-slate-500 leading-tight">No se descuenta dinero ahora. Queda como cuenta por pagar.</span>
+                </label>
+
+                <label className={`relative flex flex-col p-3 rounded-xl border-2 transition-all ${!cajaActiva ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50' : fuentePago === 'caja' ? 'border-blue-500 bg-blue-50 cursor-pointer' : 'border-slate-200 bg-white hover:border-blue-200 cursor-pointer'}`}>
+                   <input type="radio" name="fuentePago" value="caja" disabled={!cajaActiva} checked={fuentePago === 'caja'} onChange={(e) => setFuentePago(e.target.value)} className="sr-only" />
+                   <span className="text-sm font-bold text-slate-800 mb-1 flex justify-between items-center">
+                       Caja Diaria
+                       {!cajaActiva && <span className="bg-slate-200 text-slate-500 text-[9px] px-1.5 py-0.5 rounded uppercase">Cerrada</span>}
+                   </span>
+                   <span className="text-[10px] text-slate-500 leading-tight">Descuenta el efectivo directamente de la caja del turno actual.</span>
+                </label>
+
+                <label className={`relative flex flex-col p-3 rounded-xl cursor-pointer border-2 transition-all ${fuentePago === 'banco' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-200'}`}>
+                   <input type="radio" name="fuentePago" value="banco" checked={fuentePago === 'banco'} onChange={(e) => setFuentePago(e.target.value)} className="sr-only" />
+                   <span className="text-sm font-bold text-slate-800 mb-1">Capital General (Banco)</span>
+                   <span className="text-[10px] text-slate-500 leading-tight">Transferencia desde la cuenta principal del negocio. No afecta la caja chica.</span>
+                </label>
               </div>
-              <label className={`relative inline-flex items-center ${!cajaActiva ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                <input type="checkbox" disabled={!cajaActiva} checked={pagarDeCaja} onChange={e => setPagarDeCaja(e.target.checked)} className="sr-only peer" />
-                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
             </div>
           </div>
         </div>
