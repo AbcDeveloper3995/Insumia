@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { recetasService } from '../services/api/recetas';
 import { ventasService } from '../services/api/ventas';
 import { cajaService } from '../services/api/caja';
+import { finanzasService } from '../services/api/finanzas';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/api/client';
@@ -111,6 +112,15 @@ export const PuntoVenta = () => {
       if (showTurnoModal === 'abrir') {
         await cajaService.abrirCaja(restauranteId, Number(turnoFormData.monto), turnoFormData.concepto);
         toast.success('Turno abierto con éxito');
+        
+        // Verificar si es necesario configurar el capital inicial
+        const capitalActual = await finanzasService.getCapitalActual(restauranteId);
+        const movsCapital = await finanzasService.getMovimientosCapital(restauranteId);
+        if (capitalActual === 0 && movsCapital.length === 0) {
+          toast('Por favor configura el presupuesto general antes de continuar.', { icon: '💰' });
+          navigate('/finanzas');
+          return;
+        }
       } else if (showTurnoModal === 'cerrar') {
         await cajaService.cerrarCaja(cajaActiva.id, Number(turnoFormData.monto), turnoFormData.concepto);
         toast.success('Turno cerrado con éxito');
