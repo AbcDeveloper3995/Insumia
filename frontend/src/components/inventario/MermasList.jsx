@@ -39,61 +39,63 @@ export const MermasList = ({ mermas, insumos = [], recetas = [], onNewMerma }) =
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold uppercase text-[10px] tracking-wider">
-            <tr>
-              <th className="px-6 py-4">Fecha</th>
-              <th className="px-6 py-4">Ítems Afectados</th>
-              <th className="px-6 py-4">Notas</th>
-              <th className="px-6 py-4 text-right">Pérdida Financiera</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {mermas.map((merma) => (
-              <tr key={merma.id} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2 text-slate-600 font-medium">
-                    <Calendar size={14} className="text-slate-400" />
-                    {new Date(merma.fecha).toLocaleDateString('es-MX', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-col gap-1">
-                    {merma.detalles?.map((det, i) => {
-                      const nombreItem = det.tipo_item === 'receta' 
-                        ? recetas.find(r => r.id === det.item_id)?.nombre 
-                        : insumos.find(in_ => in_.id === det.item_id)?.nombre;
-                        
-                      return (
-                        <span key={i} className="text-slate-700 font-medium flex flex-col mb-2 last:mb-0">
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-                            {det.cantidad}x {nombreItem || 'Desconocido'} ({det.tipo_item === 'receta' ? 'Subreceta' : 'Insumo'})
-                          </span>
-                          <span className="text-xs text-slate-400 italic block ml-3 mt-0.5 whitespace-normal break-words max-w-[250px]">- {det.motivo}</span>
-                        </span>
-                      );
-                    })}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-slate-500 line-clamp-2">{merma.notas || '-'}</span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <span className="font-bold text-rose-500 text-base">
-                    ${Number(merma.total_perdida).toFixed(2)}
-                  </span>
-                </td>
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold uppercase text-[10px] tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Fecha</th>
+                <th className="px-6 py-4">Ítems Afectados</th>
+                <th className="px-6 py-4">Notas</th>
+                <th className="px-6 py-4 text-right">Pérdida Financiera</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {mermas.map((merma) => (
+                <tr key={merma.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 text-slate-600 font-medium">
+                      <Calendar size={14} className="text-slate-400" />
+                      {new Date(merma.fecha).toLocaleDateString('es-MX', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-1">
+                      {merma.detalles?.map((det, i) => {
+                        const nombreItem = det.tipo_item === 'receta' 
+                          ? recetas.find(r => r.id === det.item_id)?.nombre 
+                          : insumos.find(in_ => in_.id === det.item_id)?.nombre;
+                          
+                        return (
+                          <span key={i} className="text-slate-700 font-medium flex flex-col mb-2 last:mb-0">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                              {det.cantidad}x {nombreItem || 'Desconocido'} ({det.tipo_item === 'receta' ? 'Subreceta' : 'Insumo'})
+                            </span>
+                            <span className="text-xs text-slate-400 italic block ml-3 mt-0.5 whitespace-normal break-words max-w-[250px]">- {det.motivo}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-slate-500 line-clamp-2">{merma.notas || '-'}</span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="font-bold text-rose-500 text-base">
+                      ${Number(merma.total_perdida).toFixed(2)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

@@ -236,7 +236,7 @@ export const Finanzas = () => {
                     <h2 className="text-lg font-bold text-slate-800">Turno en Progreso (Métricas en Vivo)</h2>
                 </div>
                 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
                         <div className="flex justify-between items-start mb-2">
                             <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Fondo Inicial</p>

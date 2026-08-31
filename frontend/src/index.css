@@ -30,3 +30,33 @@ body {
 .animate-alert-border {
   animation: borderPulseAlert 2s ease-in-out infinite;
 }
+
+/* Fix for tooltips on mobile devices */
+@media (hover: none) {
+  .group\/tooltip {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .group\/tooltip:active > .invisible,
+  .group\/tooltip:focus > .invisible,
+  .group\/tooltip:focus-within > .invisible {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .group\/tooltip > .absolute {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    bottom: auto !important;
+    right: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90vw !important;
+    max-width: 320px !important;
+    z-index: 99999 !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  }
+}
+

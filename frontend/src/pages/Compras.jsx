@@ -366,6 +366,7 @@ export const Compras = () => {
                         </div>
                     ) : (
                         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+                          <div className="overflow-x-auto w-full">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-400 text-xs uppercase font-black tracking-widest">
@@ -430,6 +431,7 @@ export const Compras = () => {
                                     ))}
                                 </tbody>
                             </table>
+                          </div>
                         </div>
                     )}
                 </div>

@@ -203,7 +203,7 @@ export const Dashboard = () => {
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10"
         >
           
           {/* KPI 1 */}
@@ -509,7 +509,7 @@ export const Dashboard = () => {
                     </li>
                     <li className="flex items-center text-sm font-medium text-slate-200">
                       <div className="w-2 h-2 bg-purple-400 rounded-full mr-4 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></div>
-                      Auditoría Kardex activa
+                      Auditoría Detalles activa
                     </li>
                 </ul>
               </div>

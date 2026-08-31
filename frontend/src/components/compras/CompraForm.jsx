@@ -82,7 +82,7 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col h-[70vh] max-h-[800px]">
+    <form onSubmit={handleSubmit} className="flex flex-col h-[85vh] md:h-[70vh] max-h-[800px]">
       
       {/* 1. Proveedor */}
       <div className="mb-4 shrink-0">
@@ -97,9 +97,9 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
         />
       </div>
 
-      <div className="flex flex-1 gap-6 min-h-0 overflow-hidden flex-col md:flex-row">
+      <div className="flex flex-col md:flex-row flex-1 gap-6 min-h-0 overflow-y-auto md:overflow-hidden">
         {/* 2. Buscador y Lista de Insumos */}
-        <div className="flex-1 flex flex-col min-h-0 bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <div className="flex-1 flex flex-col min-h-[350px] md:min-h-0 bg-slate-50 border border-slate-200 rounded-xl p-4 shrink-0">
           <label className="block text-sm font-bold text-slate-700 mb-2">Añadir Insumos</label>
           <div className="flex gap-2 mb-3 shrink-0">
             <div className="relative flex-1">
@@ -154,7 +154,7 @@ export const CompraForm = ({ proveedores, insumos, cajaActiva, onSubmit, isLoadi
         </div>
 
         {/* 3. Carrito de Compra */}
-        <div className="flex-[1.2] flex flex-col min-h-0 bg-white border border-slate-200 rounded-xl p-4">
+        <div className="md:flex-[1.2] flex flex-col min-h-[500px] md:min-h-0 bg-white border border-slate-200 rounded-xl p-4 shrink-0">
           <label className="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
             <ShoppingCart size={16}/> Factura / Detalle
           </label>

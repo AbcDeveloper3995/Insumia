@@ -45,7 +45,7 @@ export const KardexModal = ({ insumo, onClose }) => {
              </div>
              <div>
                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
-                 Kardex: {insumo.nombre}
+                 Detalles: {insumo.nombre}
                  <div className="relative flex items-center group/tooltip mt-1">
                      <Info size={20} className="cursor-help text-blue-400 hover:text-blue-600 transition-colors" />
                      <div className="absolute top-full left-0 sm:left-0 mt-2 w-[300px] sm:w-[420px] max-h-[60vh] overflow-y-auto p-5 bg-white border border-slate-200 text-slate-600 text-[13px] rounded-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 shadow-2xl pointer-events-none font-normal leading-relaxed text-left custom-scrollbar">
@@ -59,7 +59,7 @@ export const KardexModal = ({ insumo, onClose }) => {
                          <p className="mb-2 text-slate-700 font-medium">Ejemplo de Referencia:</p>
                          <p className="mb-2">Imagina que un insumo cuesta $3.33 y hacer la receta completa cuesta $3.80. El insumo representa el <strong>87.7% del costo</strong>. Si vendes la receta en $10.00:</p>
                          <ul className="list-disc pl-5 mb-3 space-y-2">
-                             <li><strong>Aquí en Detalles (Kardex):</strong> Vemos el <em>Ingreso Bruto</em>. El insumo aportó el 87.7% de esos $10.00 de venta = <strong className="text-blue-600">$8.77</strong>.</li>
+                             <li><strong>Aquí en Detalles:</strong> Vemos el <em>Ingreso Bruto</em>. El insumo aportó el 87.7% de esos $10.00 de venta = <strong className="text-blue-600">$8.77</strong>.</li>
                              <li><strong>En Resumen de Receta:</strong> Vemos la <em>Ganancia Neta</em>. La ganancia total fue $6.20 ($10 - $3.80), el insumo aportó el 87.7% de esos $6.20 = <strong className="text-emerald-600">$5.44</strong>.</li>
                          </ul>
                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 shrink-0 mt-3">

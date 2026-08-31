@@ -81,7 +81,7 @@ export const Inventario = () => {
     registerPageTour('inventario', [
       {
         target: '.tour-inventario-tabs',
-        content: 'Aquí puedes cambiar entre el Kardex general y el registro de Mermas para el control de desperdicios.',
+        content: 'Aquí puedes cambiar entre los Detalles generales y el registro de Mermas para el control de desperdicios.',
         disableBeacon: true,
       },
       {

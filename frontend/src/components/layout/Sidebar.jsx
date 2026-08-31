@@ -23,7 +23,7 @@ import { useCaja } from '../../context/CajaContext';
 import { Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export const Sidebar = () => {
+export const Sidebar = ({ isMobileOpen, setIsMobileMenuOpen }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const { session } = useAuth();
   const { startActivePageTour, hasActiveTour } = useTour();
@@ -49,19 +49,40 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className={`relative flex flex-col bg-white/80 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) z-50 ${isExpanded ? 'w-64' : 'w-20'}`}>
-      {/* Header / Logo */}
-      <div className="h-20 flex items-center justify-between px-5 border-b border-slate-100/50">
-        <div className={`font-black tracking-tight text-2xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent transition-opacity duration-300 ${!isExpanded && 'opacity-0 hidden'}`}>
-          Insumia.
+    <>
+      {/* Overlay Móvil */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 md:hidden" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <div className={`
+        fixed inset-y-0 left-0 z-50 md:relative flex flex-col bg-white/95 md:bg-white/80 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-400 ease-in-out
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        ${isExpanded ? 'w-72 md:w-64' : 'w-72 md:w-20'}
+      `}>
+        {/* Header / Logo */}
+        <div className="h-20 flex items-center justify-between px-5 border-b border-slate-100/50">
+          <div className={`font-black tracking-tight text-2xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent transition-opacity duration-300 ${!isExpanded && 'md:opacity-0 md:hidden'}`}>
+            Insumia.
+          </div>
+          
+          <button 
+            onClick={() => {
+              if (window.innerWidth < 768) {
+                setIsMobileMenuOpen(false);
+              } else {
+                setIsExpanded(!isExpanded);
+              }
+            }}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100/80 transition-all cursor-pointer ml-auto active:scale-95"
+          >
+            {isExpanded ? <ChevronLeft size={20} className="hidden md:block" /> : <Menu size={20} className="hidden md:block" />}
+            <ChevronLeft size={24} className="md:hidden" />
+          </button>
         </div>
-        <button 
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100/80 transition-all cursor-pointer ml-auto active:scale-95"
-        >
-          {isExpanded ? <ChevronLeft size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-2">
@@ -70,7 +91,7 @@ export const Sidebar = () => {
           return (
             <NavLink
               key={item.to}
-              to={isLocked ? '#' : item.to}
+              to={item.to}
               onClick={(e) => {
                 if (isLocked) {
                   e.preventDefault();
@@ -82,6 +103,8 @@ export const Sidebar = () => {
                       color: '#856404',
                     },
                   });
+                } else {
+                  if (setIsMobileMenuOpen) setIsMobileMenuOpen(false);
                 }
               }}
               className={({ isActive }) => `
@@ -173,11 +196,12 @@ export const Sidebar = () => {
           title="Cerrar Sesión"
         >
           <LogOut size={18} />
-          <span className={`ml-3 transition-all duration-300 ${!isExpanded ? 'hidden' : 'block'}`}>
+          <span className={`ml-3 transition-all duration-300 ${!isExpanded ? 'md:hidden' : 'block'}`}>
             Cerrar sesión
           </span>
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 };

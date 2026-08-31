@@ -88,7 +88,7 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onViewKardex
           <div>
             <h4 className="text-slate-800 font-bold">¿Cómo calcula Insumia tus costos?</h4>
             <p className="text-slate-500 text-sm mt-1">
-              El costo por unidad base (ej. 1 gramo) se calcula tomando el precio de compra y dividiéndolo entre tu conversión y rendimiento. ¡Da clic en el botón <strong>Kardex</strong> de cualquier insumo para auditar dónde se gastó y cuánta ganancia generó!
+              El costo por unidad base (ej. 1 gramo) se calcula tomando el precio de compra y dividiéndolo entre tu conversión y rendimiento. ¡Da clic en el botón <strong>Detalles</strong> de cualquier insumo para auditar dónde se gastó y cuánta ganancia generó!
             </p>
           </div>
         </div>
@@ -221,7 +221,7 @@ export const InsumosList = ({ insumos, onEdit, onDelete, onRestore, onViewKardex
                     title="Ver Detalles / Historial"
                   >
                     <Info size={12} className="text-slate-400" />
-                    Kardex
+                    Detalles
                   </button>
                   {isInactive ? (
                     <button 

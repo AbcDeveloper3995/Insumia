@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Bell, AlertTriangle, AlertCircle, Building, X, Package, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -102,6 +103,95 @@ export const NotificationBell = ({ isSidebarExpanded }) => {
 
   const totalAlerts = alertas.stock.length + alertas.recetas.length + alertas.deudas.length + (alertas.descuadreCaja > 0 ? 1 : 0);
 
+  const popoverContent = (
+    <>
+      <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center shrink-0">
+        <h3 className="font-bold text-slate-800 flex items-center">
+          Centro de Alertas
+          {totalAlerts > 0 && <span className="ml-2 bg-red-100 text-red-600 text-[10px] font-black px-2 py-0.5 rounded-full">{totalAlerts}</span>}
+        </h3>
+        <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto max-h-[60vh] p-3 space-y-3">
+        {loading ? (
+          <div className="text-center py-8 text-sm text-slate-400">Consultando sistemas...</div>
+        ) : totalAlerts === 0 ? (
+          <div className="text-center py-8 text-sm text-slate-400 flex flex-col items-center">
+            <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-2">
+              <div className="w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+            </div>
+            Todo en orden. No tienes alertas pendientes.
+          </div>
+        ) : (
+          <>
+            {/* Deudas por Pagar */}
+            {alertas.deudas.length > 0 && (
+              <div className="bg-rose-50 border border-rose-100 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building size={16} className="text-rose-500" />
+                  <h4 className="text-xs font-bold text-rose-800 uppercase tracking-wider">Deudas Pendientes</h4>
+                </div>
+                <p className="text-sm text-rose-700 mb-2">Tienes <strong>{alertas.deudas.length}</strong> facturas de compras sin pagar a proveedores.</p>
+                <Link to="/compras" onClick={() => setIsOpen(false)} className="text-xs font-bold text-rose-600 hover:text-rose-500 flex items-center">
+                  Ir a Compras <ArrowRight size={12} className="ml-1" />
+                </Link>
+              </div>
+            )}
+
+            {/* Descuadre en Caja */}
+            {alertas.descuadreCaja > 0 && (
+              <div className="bg-red-50 border border-red-100 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle size={16} className="text-red-500" />
+                  <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider">Faltante en Caja</h4>
+                </div>
+                <p className="text-sm text-red-700 mb-2">
+                  Hay un faltante histórico acumulado de <strong>${alertas.descuadreCaja.toFixed(2)}</strong> en los cortes de caja.
+                </p>
+                <Link to="/informes" onClick={() => setIsOpen(false)} className="text-xs font-bold text-red-600 hover:text-red-500 flex items-center">
+                  Ver Informes <ArrowRight size={12} className="ml-1" />
+                </Link>
+              </div>
+            )}
+
+            {/* Recetas No Viables (Inflación) */}
+            {alertas.recetas.length > 0 && (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle size={16} className="text-amber-500" />
+                  <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Viabilidad de Recetas</h4>
+                </div>
+                <p className="text-sm text-amber-700 mb-2">
+                  Hay <strong>{alertas.recetas.length}</strong> platillos con margen rojo (&lt;50%).
+                </p>
+                <Link to="/recetas" onClick={() => setIsOpen(false)} className="text-xs font-bold text-amber-600 hover:text-amber-500 flex items-center">
+                  Ir a Recetas <ArrowRight size={12} className="ml-1" />
+                </Link>
+              </div>
+            )}
+
+            {/* Stock Crítico */}
+            {alertas.stock.length > 0 && (
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Package size={16} className="text-orange-500" />
+                  <h4 className="text-xs font-bold text-orange-800 uppercase tracking-wider">Stock Crítico</h4>
+                </div>
+                <p className="text-sm text-orange-700 mb-2">
+                  Tienes <strong>{alertas.stock.length}</strong> insumos en números rojos.
+                </p>
+                <Link to="/inventario" onClick={() => setIsOpen(false)} className="text-xs font-bold text-orange-600 hover:text-orange-500 flex items-center">
+                  Revisar Inventario <ArrowRight size={12} className="ml-1" />
+                </Link>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="relative" ref={popoverRef}>
       <button 
@@ -117,100 +207,37 @@ export const NotificationBell = ({ isSidebarExpanded }) => {
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className={`absolute z-[100] bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-slate-200 overflow-hidden flex flex-col
-              ${isSidebarExpanded ? 'bottom-full left-0 mb-4 w-80' : 'left-full bottom-0 ml-4 w-80'}
-            `}
-          >
-            <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-slate-800 flex items-center">
-                Centro de Alertas
-                {totalAlerts > 0 && <span className="ml-2 bg-red-100 text-red-600 text-[10px] font-black px-2 py-0.5 rounded-full">{totalAlerts}</span>}
-              </h3>
-              <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
-            </div>
+          <>
+            {/* Desktop Rendering (Inline) */}
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className={`hidden sm:flex absolute z-[100] bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-slate-200 overflow-hidden flex-col
+                ${isSidebarExpanded ? 'bottom-full left-0 mb-4 w-80' : 'left-full bottom-0 ml-4 w-80'}
+              `}
+            >
+              {popoverContent}
+            </motion.div>
 
-            <div className="flex-1 overflow-y-auto max-h-[60vh] p-3 space-y-3">
-              {loading ? (
-                <div className="text-center py-8 text-sm text-slate-400">Consultando sistemas...</div>
-              ) : totalAlerts === 0 ? (
-                <div className="text-center py-8 text-sm text-slate-400 flex flex-col items-center">
-                  <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-2">
-                    <div className="w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                  </div>
-                  Todo en orden. No tienes alertas pendientes.
-                </div>
-              ) : (
-                <>
-                  {/* Deudas por Pagar */}
-                  {alertas.deudas.length > 0 && (
-                    <div className="bg-rose-50 border border-rose-100 rounded-xl p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Building size={16} className="text-rose-500" />
-                        <h4 className="text-xs font-bold text-rose-800 uppercase tracking-wider">Deudas Pendientes</h4>
-                      </div>
-                      <p className="text-sm text-rose-700 mb-2">Tienes <strong>{alertas.deudas.length}</strong> facturas de compras sin pagar a proveedores.</p>
-                      <Link to="/compras" onClick={() => setIsOpen(false)} className="text-xs font-bold text-rose-600 hover:text-rose-500 flex items-center">
-                        Ir a Compras <ArrowRight size={12} className="ml-1" />
-                      </Link>
-                    </div>
-                  )}
-
-                  {/* Descuadre en Caja */}
-                  {alertas.descuadreCaja > 0 && (
-                    <div className="bg-red-50 border border-red-100 rounded-xl p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <AlertCircle size={16} className="text-red-500" />
-                        <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider">Faltante en Caja</h4>
-                      </div>
-                      <p className="text-sm text-red-700 mb-2">
-                        Hay un faltante histórico acumulado de <strong>${alertas.descuadreCaja.toFixed(2)}</strong> en los cortes de caja (el dinero real fue menor al esperado por el sistema).
-                      </p>
-                      <Link to="/informes" onClick={() => setIsOpen(false)} className="text-xs font-bold text-red-600 hover:text-red-500 flex items-center">
-                        Ver Informes <ArrowRight size={12} className="ml-1" />
-                      </Link>
-                    </div>
-                  )}
-
-                  {/* Recetas No Viables (Inflación) */}
-                  {alertas.recetas.length > 0 && (
-                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle size={16} className="text-amber-500" />
-                        <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Viabilidad de Recetas</h4>
-                      </div>
-                      <p className="text-sm text-amber-700 mb-2">
-                        Hay <strong>{alertas.recetas.length}</strong> platillos con margen rojo (&lt;50%). Considera revisar sus precios o insumos por inflación.
-                      </p>
-                      <Link to="/recetas" onClick={() => setIsOpen(false)} className="text-xs font-bold text-amber-600 hover:text-amber-500 flex items-center">
-                        Ir a Recetas <ArrowRight size={12} className="ml-1" />
-                      </Link>
-                    </div>
-                  )}
-
-                  {/* Stock Crítico */}
-                  {alertas.stock.length > 0 && (
-                    <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Package size={16} className="text-orange-500" />
-                        <h4 className="text-xs font-bold text-orange-800 uppercase tracking-wider">Stock Crítico</h4>
-                      </div>
-                      <p className="text-sm text-orange-700 mb-2">
-                        Tienes <strong>{alertas.stock.length}</strong> insumos en números rojos.
-                      </p>
-                      <Link to="/inventario" onClick={() => setIsOpen(false)} className="text-xs font-bold text-orange-600 hover:text-orange-500 flex items-center">
-                        Revisar Inventario <ArrowRight size={12} className="ml-1" />
-                      </Link>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </motion.div>
+            {/* Mobile Rendering (Portal) */}
+            {createPortal(
+              <div className="sm:hidden fixed inset-0 z-[99999] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsOpen(false)}></div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative z-10 w-full max-w-[320px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
+                >
+                  {popoverContent}
+                </motion.div>
+              </div>,
+              document.body
+            )}
+          </>
         )}
       </AnimatePresence>
     </div>

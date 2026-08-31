@@ -334,7 +334,7 @@ export const Informes = () => {
         )}
         
         {/* KPIs Resumen Principal */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="relative hover:z-50 transition-all bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col justify-between h-full">
             <div className="flex justify-between items-start mb-2">
               <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Platillos Vendidos</p>

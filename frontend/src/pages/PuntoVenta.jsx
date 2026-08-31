@@ -329,14 +329,14 @@ export const PuntoVenta = () => {
   const itemVariants = { hidden: { opacity: 0, scale: 0.9 }, show: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 400, damping: 25 } } };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex h-full w-full bg-slate-50/50 overflow-hidden rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row h-full w-full bg-slate-50/50 overflow-y-auto md:overflow-hidden rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
       
       {/* Panel Izquierdo: Catálogo del Menú */}
-      <div className="flex-1 flex flex-col h-full bg-transparent">
-        <div className="px-8 py-8 bg-white/60 backdrop-blur-md border-b border-slate-100 shrink-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex-1 flex flex-col min-h-[500px] md:h-full bg-transparent shrink-0">
+        <div className="px-4 md:px-8 py-4 md:py-8 bg-white/60 backdrop-blur-md border-b border-slate-100 shrink-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Punto de Venta</h1>
-            <p className="text-slate-500 font-medium text-sm mt-1">Terminal rápida táctil | Turno activo</p>
+            <h1 className="text-xl md:text-3xl font-black text-slate-800 tracking-tight">Punto de Venta</h1>
+            <p className="text-slate-500 font-medium text-xs md:text-sm mt-1">Terminal rápida táctil | Turno activo</p>
           </div>
           
           <div className="tour-pos-acciones flex items-center gap-3">
@@ -413,7 +413,7 @@ export const PuntoVenta = () => {
       </div>
 
       {/* Panel Derecho: Carrito Claro Premium */}
-      <div className="tour-pos-ticket w-full md:w-[420px] bg-white/90 backdrop-blur-2xl flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.04)] z-20 shrink-0 h-full border-l border-slate-200/50">
+      <div className="tour-pos-ticket w-full md:w-[420px] bg-white/90 backdrop-blur-2xl flex flex-col shadow-[0_-20px_40px_rgba(0,0,0,0.04)] md:shadow-[-20px_0_40px_rgba(0,0,0,0.04)] z-20 shrink-0 h-auto min-h-[400px] md:h-full border-t md:border-t-0 border-l-0 md:border-l border-slate-200/50">
         <div className="px-8 py-8 shrink-0 border-b border-slate-100 bg-transparent">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center"><ShoppingCart className="mr-3 text-blue-600" size={24} strokeWidth={2.5} />Ticket</h2>
@@ -441,7 +441,7 @@ export const PuntoVenta = () => {
                       <span className="font-bold w-10 text-center text-base text-slate-800">{item.cantidad}</span>
                       <button onClick={() => modificarCantidad(item.receta.id, 1)} className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-lg shadow-sm transition-all group"><Plus size={16} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-300" /></button>
                     </div>
-                    <button onClick={() => eliminarDelCarrito(item.receta.id)} className="p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover/item:opacity-100"><Trash2 size={18} /></button>
+                    <button onClick={() => eliminarDelCarrito(item.receta.id)} className="p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-100 md:opacity-0 md:group-hover/item:opacity-100"><Trash2 size={18} /></button>
                   </div>
                 </motion.div>
               ))}
