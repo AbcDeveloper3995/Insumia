@@ -106,39 +106,42 @@ export const SeleccionRestaurante = () => {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans selection:bg-blue-200">
       
-      {/* Banner Principal - Azul Primario, Degradado, Menos Alto */}
-      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 text-white px-8 py-8 shadow-md relative overflow-hidden">
-        {/* Patrón sutil de fondo */}
+      {/* Banner Principal - Más pequeño */}
+      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 text-white px-6 py-5 shadow-sm relative overflow-hidden">
+        {/* Patrón sutil de fondo para textura sin usar imagen pesada */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
         
         <div className="max-w-6xl mx-auto w-full relative z-10 flex justify-between items-center gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
-              <ChefHat size={28} className="text-white" />
-            </div>
+          <div className="flex items-center gap-4">
+            <img src="/img/insumia_logo.png" alt="Insumia Logo" className="w-12 h-12 rounded-full object-cover border-2 border-white/20 shadow-inner bg-white" />
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight mb-0.5">
+              <h1 className="text-xl md:text-2xl font-black tracking-tight mb-0.5">
                 Tus Restaurantes
               </h1>
-              <p className="text-blue-100 text-sm font-medium">Selecciona o administra tus espacios de trabajo</p>
+              <p className="text-blue-100 text-xs font-medium">Selecciona o administra tus espacios</p>
             </div>
           </div>
           
           <button
             onClick={() => authService.signOut()}
-            className="flex items-center gap-2 text-blue-50 hover:text-white transition-all font-bold cursor-pointer bg-white/10 hover:bg-white/20 px-4 py-2.5 rounded-lg border border-white/20 backdrop-blur-sm active:scale-95 text-sm"
+            className="flex items-center gap-2 text-blue-50 hover:text-white transition-all font-bold cursor-pointer bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg border border-white/20 backdrop-blur-sm active:scale-95 text-sm"
           >
             <LogOut size={16} strokeWidth={2.5} />
-            <span>Cerrar Sesión</span>
+            <span className="hidden sm:inline">Cerrar Sesión</span>
           </button>
         </div>
       </div>
 
       {/* Contenedor Principal (Caja Blanca Abajo) */}
       <div className="flex-1 p-6 md:p-8">
-        <div className="max-w-6xl mx-auto w-full bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-10">
+        <div className="max-w-6xl mx-auto w-full bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-10 relative overflow-hidden">
           
-          <div className="flex justify-between items-center mb-8">
+          {/* Imagen de insumia2 como marca de agua/vector */}
+          <div className="absolute right-0 bottom-0 w-full h-full opacity-[0.04] pointer-events-none flex items-end justify-end mix-blend-multiply">
+            <img src="/img/insumia2.jpeg" alt="Vector Background" className="w-2/3 h-2/3 md:w-1/2 md:h-full object-contain object-right-bottom filter grayscale" />
+          </div>
+
+          <div className="relative z-10 flex justify-between items-center mb-8">
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">Locales Disponibles</h2>
             <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">
               {restaurants?.length || 0} Registrados

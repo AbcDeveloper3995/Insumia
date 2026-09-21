@@ -1,40 +1,70 @@
-# 🚀 Próximos Pasos y Plan de Trabajo - Insumia
+# Plan de Trabajo: Escalabilidad y Futuro de Insumia
 
-Este documento establece la hoja de ruta técnica y de funcionalidades para llevar a Insumia al siguiente nivel. El enfoque de esta fase es **pulir el núcleo actual** antes de escalar horizontalmente a múltiples sucursales o puntos de venta avanzados.
+Este documento detalla la hoja de ruta estratégica para escalar Insumia de un ERP ligero a un ecosistema integral "Enterprise" para restaurantes. Cada fase aborda una necesidad operativa avanzada y describe exactamente qué funcionalidades se agregarán y cómo se abordará su arquitectura técnica.
 
 ---
 
-## 1. Módulo de Producción (Stock de Subrecetas)
-**Problema:** Actualmente, las subrecetas sirven exclusivamente para calcular el costo teórico. Sin embargo, en la cocina real, el chef prepara tandas (ej. 10 litros de salsa) y las almacena físicamente.
-**Solución a implementar:**
-- Agregar una sección de "Producción" dentro del Inventario.
-- Botón **"Producir Lote"** en la vista de Subrecetas.
-- Al confirmar la producción, el sistema restará automáticamente los ingredientes base (tomate, cebolla) y creará un "Stock Procesado" de la salsa producida.
-- Permitir mermas y ajustes de este stock preparado.
+## Fase 1: Módulo de Meseros y Sistema KDS (Kitchen Display System)
 
-## 2. Historial de Variación de Costos (Tracker de Inflación)
-**Problema:** Los precios de los proveedores fluctúan constantemente. El dueño no tiene visibilidad de qué tanto han subido sus costos a lo largo del año sin revisar facturas viejas.
-**Solución a implementar:**
-- Gráfico de tendencia de precios integrado en el modal de **Detalles del Insumo**.
-- Cada vez que se registre una compra de un insumo a un precio distinto, se creará un punto en el historial.
-- Alerta inteligente en el Centro de Alertas si el costo de un ingrediente crítico subió más de un 15% en el último mes.
+### ¿Qué vamos a implementar?
+Actualmente el Punto de Venta (POS) centraliza la venta en la caja. Vamos a descentralizar la toma de pedidos permitiendo que los meseros usen tablets o smartphones en las mesas, y que la cocina reciba esas comandas en una pantalla digital (KDS) en lugar de imprimir tickets de papel, agilizando la comunicación.
 
-## 3. Finanzas de Compras: Impuestos y Descuentos
-**Problema:** El módulo de compras asume un precio plano, lo cual genera discrepancias contables cuando las facturas reales incluyen IVA o descuentos comerciales.
-**Solución a implementar:**
-- Agregar campos opcionales en el `<CompraForm>` para **Impuestos (16%, 8%, etc.)** y **Descuentos Globales**.
-- Calcular automáticamente el impacto de estos impuestos/descuentos en el costo base de los insumos (ej. si hay un descuento del 10% en la factura, el costo unitario del inventario entra un 10% más barato).
+### ¿Cómo lo haremos?
+1. **Frontend PWA (Progressive Web App):** Desarrollaremos una interfaz móvil optimizada en React que funcionará en cualquier teléfono del mesero sin necesidad de instalarla desde las tiendas de apps.
+2. **Sincronización en Tiempo Real:** Utilizaremos **Supabase Realtime (WebSockets)**. Cuando el mesero presiona "Enviar" en la mesa, la orden aparecerá instantáneamente en el POS de caja y en la pantalla de la cocina sin necesidad de recargar la página.
+3. **Interfaz KDS:** Se creará una vista específica para la cocina, con tarjetas tipo "Kanban" donde los cocineros podrán marcar los platos como: *Recibido -> En Preparación -> Listo para Servir*.
+4. **Descuento de Inventario Diferido:** La orden quedará en estado "Abierta". El inventario preparado se descontará automáticamente cuando la orden se marque como "Pagada" en caja, manteniendo nuestra lógica actual intacta.
 
-## 4. Exportación y "Modo Cocina" (PDF/Excel)
-**Problema:** Las cocinas necesitan listas impresas para trabajar y hacer conteos, y los contadores necesitan números en Excel.
-**Solución a implementar:**
-- **Plantilla de Conteo Ciego:** Exportar un PDF con todos los insumos y una línea en blanco para que el personal cuente el inventario físico y luego se registre en el sistema.
-- **Exportación de Recetario:** Generar un PDF elegante con los pasos y fotos de las recetas para uso del personal, **ocultando** los márgenes de ganancia y costos reales.
-- **Exportación Financiera (CSV/Excel):** Botón en el módulo de Informes para descargar la Matriz BCG completa.
+---
 
-## 5. Auditoría Avanzada de Kardex
-**Problema:** Los movimientos de inventario deben ser totalmente trazables. "Faltan 5 kilos de carne" debe tener una respuesta inmediata.
-**Solución a implementar:**
-- Añadir el usuario (quién hizo el cambio) y motivo obligatorio a cada ajuste manual.
-- Filtros avanzados en el Kardex para buscar específicamente (Mermas, Compras, Ventas, Ajustes Manuales).
-- Reporte mensual de "Fugas de Inventario" calculado por la diferencia entre ventas teóricas e inventario físico real.
+## Fase 2: Integraciones con Delivery (Agregadores)
+
+### ¿Qué vamos a implementar?
+Los restaurantes de hoy sufren al tener 3 tablets distintas (Uber Eats, Rappi, Didi Food) sonando al mismo tiempo y teniendo que pasar los pedidos a mano al sistema principal (lo que genera errores y no descuenta inventario). Vamos a centralizar todos los canales de venta directamente dentro de Insumia.
+
+### ¿Cómo lo haremos?
+1. **Edge Functions (Backend Serverless):** Desplegaremos funciones seguras (Supabase Edge Functions en Deno/Node) que actuarán como *Webhooks* públicos.
+2. **Conexión de APIs:** Nos integraremos con las APIs oficiales de Uber Eats y Rappi. 
+3. **Mapeo de Menú:** Crearemos una tabla de homologación donde un "Big Mac" en Uber Eats se asocie al ID de la receta "Big Mac" en Insumia.
+4. **Flujo Automatizado:** Cuando entre un pedido de Rappi, el webhook de Insumia lo recibe, lo transforma a nuestro formato y dispara la misma función SQL (`registrar_venta`) que usamos en el POS, descontando el inventario automáticamente y mandando el pedido directo a la pantalla KDS de la cocina.
+
+---
+
+## Fase 3: Inteligencia Artificial y Proyección de Demanda
+
+### ¿Qué vamos a implementar?
+Pasar de un sistema reactivo (que te dice "se te acabó el tomate") a un sistema **predictivo** (que te dice "comienza a llover mañana, compra menos cerveza y más ingredientes para sopa, necesitarás exactamente 8 Kg").
+
+### ¿Cómo lo haremos?
+1. **Minería de Datos (Kardex Histórico):** Usaremos el rico historial de ventas y movimientos de nuestro Kardex inmutable como set de entrenamiento.
+2. **Contexto Externo (APIs de Clima y Calendario):** Conectaremos una API meteorológica (ej. OpenWeather) y un calendario de festivos locales. El comportamiento del consumidor gastronómico depende en gran medida de si es quincena, día festivo, o si llueve.
+3. **Motor de Inferencia AI:** 
+   - Opción A: Integrar un modelo de predicción de series temporales (como Prophet).
+   - Opción B: Integrar llamadas a LLMs avanzados (como Gemini Pro o GPT-4o) alimentándoles los datos de las últimas semanas mediante RAG (Retrieval-Augmented Generation) para que generen un reporte narrativo y una orden de compra sugerida.
+4. **UX:** Añadir un botón mágico en el módulo de compras: "Sugerir Orden Inteligente", que auto-llenará el carrito de compras a proveedores con una precisión estadística altísima.
+
+---
+
+## Fase 4: Portal B2B Integrado (Compras Automatizadas)
+
+### ¿Qué vamos a implementar?
+Actualmente el gerente ve qué falta en Insumia y luego tiene que llamar por teléfono o escribir por WhatsApp al proveedor de carne. Vamos a automatizar este puente, creando un mini-portal para los proveedores.
+
+### ¿Cómo lo haremos?
+1. **Órdenes de Compra (PO):** Crearemos un nuevo estado de compra ("Enviado a Proveedor").
+2. **Magic Links:** Cuando el restaurante genere la orden (apoyado por la IA), Insumia enviará automáticamente un email o mensaje de WhatsApp (vía Twilio API) al proveedor con un enlace cifrado seguro.
+3. **Vista de Proveedor:** Al hacer clic en el enlace, el proveedor verá la orden en una web ligera (sin necesidad de crearse una cuenta en Insumia). Podrá aceptar la orden, marcar qué cosas no tiene en stock o actualizar si algún precio cambió.
+4. **Sincronización:** Al momento que el proveedor da clic en "Confirmar Envío", Insumia notifica al restaurante, actualiza los nuevos costos y deja la compra lista para ser ingresada al Kardex apenas llegue el camión.
+
+---
+
+## Fase 5: Facturación Electrónica Nativa (Legal & Fiscal)
+
+### ¿Qué vamos a implementar?
+Permitir que el restaurante cumpla con sus obligaciones tributarias directamente desde el POS, sin tener que recapturar el ticket en los portales lentos del gobierno (SAT en México, DIAN en Colombia, AFIP en Argentina, etc.).
+
+### ¿Cómo lo haremos?
+1. **Módulo de Facturación:** En el Punto de Venta, al cobrar, añadiremos un botón de "Solicitar Factura".
+2. **Gestión de Clientes (CRM Básico):** Crearemos una tabla de clientes donde se guarden los datos fiscales (RFC/NIT, Razón Social, Uso de CFDI/Factura, Email) para clientes frecuentes.
+3. **Integración con un PAC (Proveedor Autorizado de Certificación):** Nos conectaremos por API REST a un servicio de timbrado fiscal. 
+4. **Flujo de Emisión:** Al confirmar, Insumia envía el JSON con el desglose de los platillos e impuestos al PAC. El PAC devuelve el XML y el PDF timbrado oficial. Insumia los almacena y los envía automáticamente por correo al cliente final.

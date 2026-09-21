@@ -65,8 +65,9 @@ export const Sidebar = ({ isMobileOpen, setIsMobileMenuOpen }) => {
       `}>
         {/* Header / Logo */}
         <div className="h-20 flex items-center justify-between px-5 border-b border-slate-100/50">
-          <div className={`font-black tracking-tight text-2xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent transition-opacity duration-300 ${!isExpanded && 'md:opacity-0 md:hidden'}`}>
-            Insumia.
+          <div className={`flex items-center gap-3 transition-opacity duration-300 ${!isExpanded && 'md:opacity-0 md:hidden'}`}>
+            <img src="/img/insumia_logo.png" alt="Insumia Logo" className="h-10 w-10 rounded-full object-cover border border-slate-200 drop-shadow-sm" />
+            <span className="font-black tracking-tight text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Insumia</span>
           </div>
           
           <button 
