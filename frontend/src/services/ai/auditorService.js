@@ -37,14 +37,14 @@ export const auditorService = {
     };
   },
 
-  async askAuditor(message, restaurantId, chatHistory = []) {
+  async askAuditorStream(message, restaurantId, chatHistory = [], onChunk) {
     try {
       const context = await this.getRestaurantContext(restaurantId);
       
       const systemPrompt = `Eres Insumia IA, el Auditor y Copiloto Financiero de este restaurante. 
 Usa el siguiente contexto real de la base de datos para responder cualquier pregunta del gerente. 
 Si preguntan por el stock, caducidades o ventas, básate SOLO en esta información.
-Responde de manera ejecutiva, clara, y usando Markdown (como negritas y listas).
+Responde de manera ejecutiva, clara, y usando Markdown (como tablas de Markdown y listas).
       
 DATOS DEL RESTAURANTE AHORA MISMO:
 ${JSON.stringify(context, null, 2)}`;
@@ -54,7 +54,7 @@ ${JSON.stringify(context, null, 2)}`;
         parts: [{ text: msg.content }]
       }));
       
-      const response = await ai.models.generateContent({
+      const stream = await ai.models.generateContentStream({
         model: 'gemini-3.6-flash',
         contents: [
           { role: 'user', parts: [{ text: systemPrompt }] },
@@ -67,9 +67,14 @@ ${JSON.stringify(context, null, 2)}`;
         }
       });
       
-      return response.text;
+      let fullText = "";
+      for await (const chunk of stream) {
+          fullText += chunk.text;
+          if (onChunk) onChunk(fullText);
+      }
+      return fullText;
     } catch (error) {
-      console.error("Error en askAuditor:", error);
+      console.error("Error en askAuditorStream:", error);
       throw new Error("No pude comunicarme con el motor de IA. Verifica tu conexión o intenta más tarde.");
     }
   },

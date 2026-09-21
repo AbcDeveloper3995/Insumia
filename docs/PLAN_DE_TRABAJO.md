@@ -44,6 +44,16 @@ Pasar de un sistema pasivo a un **ecosistema predictivo e inteligente**. Crearem
 4. **Proyección y Resúmenes Automáticos:** 
    - **Compras Inteligentes:** Un botón mágico que analiza clima, festivos y Kardex histórico para generar órdenes de compra sugeridas hiperprecisas.
    - **Reportes Narrativos:** Tareas en segundo plano (Cron Jobs / Edge Functions) que analizan la data el domingo por la noche y entregan el lunes un "Resumen Ejecutivo Semanal" en texto digerible.
+5. **Agente Autónomo de Ejecución (Function Calling / MCP):** 
+   - **De Lector a Ejecutor:** La IA dejará de ser de solo lectura. Mediante el uso de *Tools* (Herramientas), le enseñaremos a la IA a ejecutar acciones en el sistema.
+   - **Flujo Natural:** Si el gerente dice *"Registra una compra de 5kg de Tomate a Proveedor X por $10"*, la IA entenderá la intención, estructurará los datos y ejecutará internamente el servicio `comprasService.registrarCompra()`, respondiendo: *"¡Listo! Compra registrada y Kardex actualizado"*.
+   - **Herramientas (Tools) a implementar:** Crear proveedores, registrar compras, registrar mermas, crear/editar recetas, y abrir/cerrar turnos de caja.
+6. **Visión a Futuro (Escalabilidad Enterprise de IA):**
+   - **Fijación Dinámica de Precios:** Monitoreo de fluctuaciones de costo para sugerir aumentos de precios en el menú y proteger el margen de ganancia.
+   - **Pedidos por Voz para Meseros:** Transformar comandos de voz naturales en JSON estructurado enviado directamente al sistema de cocina (KDS).
+   - **Staffing Predictivo:** Cruzar ventas históricas y clima para sugerir exactamente cuántos meseros programar por turno, ahorrando nómina.
+   - **Marketing Automatizado:** Creación proactiva de promociones, textos y arte para mover inventario próximo a caducar.
+   - **Análisis de Sentimiento:** Conexión con reseñas de Google Maps para dar resúmenes sobre quejas de clientes y problemas operativos recurrentes.
 
 ---
 
