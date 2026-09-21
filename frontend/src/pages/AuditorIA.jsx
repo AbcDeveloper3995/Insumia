@@ -78,7 +78,7 @@ export const AuditorIA = () => {
           <h1 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
             Auditor IA <Sparkles size={16} className="text-amber-400 fill-amber-400" />
           </h1>
-          <p className="text-sm text-slate-500 font-medium">Motor Analítico de Insumia (Gemini 3.6 Flash)</p>
+          <p className="text-sm text-slate-500 font-medium">Asistente cognitivo entrenado con los datos de tu restaurante</p>
         </div>
       </div>
 
