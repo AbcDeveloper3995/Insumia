@@ -30,18 +30,20 @@ Los restaurantes de hoy sufren al tener 3 tablets distintas (Uber Eats, Rappi, D
 
 ---
 
-## Fase 3: Inteligencia Artificial y Proyección de Demanda
+## Fase 3: Auditor IA y Proyección de Demanda (Copiloto Gastronómico)
 
 ### ¿Qué vamos a implementar?
-Pasar de un sistema reactivo (que te dice "se te acabó el tomate") a un sistema **predictivo** (que te dice "comienza a llover mañana, compra menos cerveza y más ingredientes para sopa, necesitarás exactamente 8 Kg").
+Pasar de un sistema pasivo a un **ecosistema predictivo e inteligente**. Crearemos un "Auditor IA" (o Secretario Inteligente) integrado que trabaje de la mano con el gerente. Será capaz de analizar el historial, detectar discrepancias entre compras y ventas, gestionar activamente lotes por caducar y responder preguntas financieras complejas en lenguaje natural.
 
 ### ¿Cómo lo haremos?
-1. **Minería de Datos (Kardex Histórico):** Usaremos el rico historial de ventas y movimientos de nuestro Kardex inmutable como set de entrenamiento.
-2. **Contexto Externo (APIs de Clima y Calendario):** Conectaremos una API meteorológica (ej. OpenWeather) y un calendario de festivos locales. El comportamiento del consumidor gastronómico depende en gran medida de si es quincena, día festivo, o si llueve.
-3. **Motor de Inferencia AI:** 
-   - Opción A: Integrar un modelo de predicción de series temporales (como Prophet).
-   - Opción B: Integrar llamadas a LLMs avanzados (como Gemini Pro o GPT-4o) alimentándoles los datos de las últimas semanas mediante RAG (Retrieval-Augmented Generation) para que generen un reporte narrativo y una orden de compra sugerida.
-4. **UX:** Añadir un botón mágico en el módulo de compras: "Sugerir Orden Inteligente", que auto-llenará el carrito de compras a proveedores con una precisión estadística altísima.
+1. **Auditoría de Rendimiento y Mermas:** El sistema cruzará continuamente los datos de compras, las recetas y las ventas reales para detectar mermas ocultas o robos. (Ej. *"Compraste 10kg de tomate, pero vendiste platillos que equivalen a 8kg. Tienes 2kg de merma sin justificar"*).
+2. **Gestión Activa de Caducidad:** La IA monitoreará los lotes y sugerirá acciones proactivas comerciales. (Ej. *"El lote #45 de pollo caduca en 2 días, sugiero lanzar una promoción en menú hoy para recuperar la inversión"*).
+3. **Asistente Conversacional (RAG):**
+   - **Motor LLM:** Integración de modelos avanzados (como Gemini Pro u OpenAI).
+   - **Técnica RAG (Retrieval-Augmented Generation):** Al preguntar algo a la IA en el chat integrado, el backend consultará los datos reales (Kardex, ventas recientes, inventario) y los inyectará como contexto. Esto asegura que la IA responda de manera precisa con base en los números exactos del restaurante, sin inventar datos.
+4. **Proyección y Resúmenes Automáticos:** 
+   - **Compras Inteligentes:** Un botón mágico que analiza clima, festivos y Kardex histórico para generar órdenes de compra sugeridas hiperprecisas.
+   - **Reportes Narrativos:** Tareas en segundo plano (Cron Jobs / Edge Functions) que analizan la data el domingo por la noche y entregan el lunes un "Resumen Ejecutivo Semanal" en texto digerible.
 
 ---
 

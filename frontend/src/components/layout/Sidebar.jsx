@@ -13,7 +13,8 @@ import {
   Truck,
   Store,
   Building,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTour } from '../../context/TourContext';
@@ -44,6 +45,7 @@ export const Sidebar = ({ isMobileOpen, setIsMobileMenuOpen }) => {
     { to: '/recetas', icon: <ChefHat size={20} />, label: 'Recetas', requireCaja: true },
     { to: '/ventas', icon: <ShoppingCart size={20} />, label: 'Punto de Venta', requireCaja: false },
     { to: '/informes', icon: <BarChart3 size={20} />, label: 'Informes', requireCaja: true },
+    { to: '/auditor-ia', icon: <Sparkles size={20} />, label: 'Auditor IA', requireCaja: true },
     { to: '/finanzas', icon: <Building size={20} />, label: 'Finanzas', requireCaja: true },
     { to: '/seleccionar-restaurante', icon: <Store size={20} />, label: 'Mis Restaurantes', requireCaja: false },
   ];

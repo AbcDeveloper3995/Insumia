@@ -11,6 +11,7 @@ import { Informes } from './pages/Informes';
 import { Finanzas } from './pages/Finanzas';
 import { Compras } from './pages/Compras';
 import { SeleccionRestaurante } from './pages/SeleccionRestaurante';
+import { AuditorIA } from './pages/AuditorIA';
 import { TourProvider } from './context/TourContext';
 import { CajaProvider } from './context/CajaContext';
 
@@ -32,6 +33,7 @@ function App() {
             <Route path="/recetas" element={<Recetas />} />
             <Route path="/ventas" element={<PuntoVenta />} />
             <Route path="/informes" element={<Informes />} />
+            <Route path="/auditor-ia" element={<AuditorIA />} />
             <Route path="/finanzas" element={<Finanzas />} />
             <Route path="/compras" element={<Compras />} />
           </Route>

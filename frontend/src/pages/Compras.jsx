@@ -5,13 +5,14 @@ import { insumosService } from '../services/api/insumos';
 import { cajaService } from '../services/api/caja';
 import { finanzasService } from '../services/api/finanzas';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Plus, AlertTriangle, Building, Search, X, Wallet, Edit, Trash2, Save, Info } from 'lucide-react';
+import { ShoppingCart, Plus, AlertTriangle, Building, Search, X, Wallet, Edit, Trash2, Save, Info, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '../services/api/client';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/Loading';
 import { Modal } from '../components/common/Modal';
 import { CompraForm } from '../components/compras/CompraForm';
 import { useTour } from '../context/TourContext';
+import { auditorService } from '../services/ai/auditorService';
 
 export const Compras = () => {
   const { session, currentRestaurant } = useAuth();
@@ -33,6 +34,10 @@ export const Compras = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [compraToPay, setCompraToPay] = useState(null);
+  
+  // Sugerencia Inteligente IA
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestion, setSuggestion] = useState(null);
 
   const loadData = async () => {
     try {
@@ -225,6 +230,18 @@ export const Compras = () => {
       }
   };
 
+  const handleSugerenciaIA = async () => {
+    try {
+      setIsSuggesting(true);
+      const res = await auditorService.suggestPurchaseOrder(currentRestaurant?.id);
+      setSuggestion(res);
+    } catch (err) {
+      toast.error(err.message || 'Error al generar sugerencia');
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner text="Cargando historial de compras..." />;
 
   return (
@@ -238,6 +255,14 @@ export const Compras = () => {
                 <p className="text-slate-500 mt-1 text-sm">Gestiona el reabastecimiento de tu inventario y cuentas por pagar.</p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-4">
+                <button
+                    onClick={handleSugerenciaIA}
+                    disabled={isSuggesting}
+                    className="flex justify-center items-center space-x-2 px-5 py-2.5 bg-amber-500 text-white font-medium rounded-xl hover:bg-amber-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                    {isSuggesting ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} className="group-hover:rotate-12 transition-transform duration-300" />}
+                    <span className="hidden sm:inline">{isSuggesting ? 'Analizando...' : 'Compra Inteligente'}</span>
+                </button>
                 <button
                     onClick={() => setIsModalOpen(true)}
                     className="tour-compras-add flex justify-center items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
@@ -484,6 +509,59 @@ export const Compras = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Modal de Sugerencia Inteligente (IA) */}
+      <Modal
+        isOpen={!!suggestion}
+        onClose={() => setSuggestion(null)}
+        title="✨ Sugerencia de Compra (IA)"
+        maxWidth="max-w-3xl"
+      >
+        <div className="text-slate-700">
+          <p className="mb-4 text-sm font-medium">Basado en tus inventarios, lotes próximos a caducar y ventas recientes, Insumia IA te sugiere comprar lo siguiente para evitar desabastecimiento:</p>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden mb-6">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-100/80 text-slate-500 font-bold border-b border-slate-200/60">
+                <tr>
+                  <th className="px-4 py-3">Insumo Sugerido</th>
+                  <th className="px-4 py-3 text-center">Cantidad a Comprar</th>
+                  <th className="px-4 py-3">Motivo / Justificación</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {suggestion && suggestion.length > 0 ? (
+                  suggestion.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-100/50 transition-colors">
+                      <td className="px-4 py-3 font-bold text-slate-800">{item.nombre}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-md">
+                          {item.cantidad_sugerida} {item.unidad}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 text-xs font-medium">{item.motivo}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="3" className="px-4 py-8 text-center flex flex-col items-center justify-center text-slate-500">
+                       <Sparkles size={32} className="text-emerald-400 mb-2 opacity-50" />
+                       <span className="font-medium text-slate-600">Todo tu inventario está en niveles óptimos.</span>
+                       <span className="text-xs text-slate-400 mt-1">La IA no encontró nada urgente que debas comprar hoy.</span>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-end gap-3">
+             <button onClick={() => setSuggestion(null)} className="px-5 py-2.5 text-slate-500 font-medium hover:bg-slate-100 rounded-xl transition-colors cursor-pointer active:scale-95">Cerrar Análisis</button>
+             <button onClick={() => { setSuggestion(null); setIsModalOpen(true); }} className="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-sm cursor-pointer flex items-center gap-2 active:scale-95">
+               <ShoppingCart size={18}/> Proceder a Comprar
+             </button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 };
